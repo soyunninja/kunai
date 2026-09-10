@@ -1,0 +1,57 @@
+schema: spec-driven
+
+context: |
+  Product: configurable browser startup page / personal command center.
+  Stack: Nuxt 4, Vue 3, TypeScript, Tailwind CSS 4, PocketBase, pnpm.
+  User model: multiple accounts, but each user owns an isolated private personal space. No shared workspaces or collaborative dashboards in MVP.
+  Dashboard model: generic user-owned dashboard tabs composed from reusable widget instances.
+  Grid: 8 logical columns on desktop/tablet landscape, unbounded vertical rows, widget height <= 3, each widget declares legal sizes, separate desktop/tablet/mobile layouts.
+  Default onboarding result: one Home dashboard containing Search, Local Clock, Local Weather, and Bookmarks.
+  Visual direction: dark-first, mostly monospaced, terminal/TUI-inspired, compact, thin borders, restrained color, tablet-first alongside desktop.
+  Integrations: weather, currency, markets, read-only Google Calendar, AI Spanish->Japanese translation, Japanese holidays.
+  SDD: phase briefs are in docs/phases/. OpenSpec artifacts are authoritative for each active change. Do not create docs/specs/.
+  Current phase: 0001 Foundation. Read project/context.md and docs/phases/0001-foundation.md.
+
+# No real test runner exists before Phase 0001. Refresh this through /sdd-init
+# after the testing foundation is implemented.
+strict_tdd: false
+
+rules:
+  proposal:
+    - Read AGENTS.md, project/context.md, project/product-decisions.md, project/open-decisions.md, and the relevant docs/phases brief before proposing.
+    - Do not expand scope into later phases.
+    - Identify owner decisions only when they become blocking for the active phase.
+    - Call out any new major dependency or provider choice.
+  specs:
+    - Use MUST/SHOULD/MAY language for behavioral requirements where useful.
+    - Use Given/When/Then scenarios for important user-visible, security, and failure behavior.
+    - Include explicit non-goals so future-phase work is not pulled forward.
+    - For widget changes, specify legal-size behavior or require it from design before apply.
+  design:
+    - Respect PocketBase per-user isolation and Nuxt server secret boundaries.
+    - Keep dashboards generic and widgets reusable.
+    - Prefer small explicit modules over speculative abstractions.
+    - For each new widget type, define stable type ID, config schema, allowed sizes, default size, state behavior, and persistence boundary.
+    - For external providers, define normalized response contracts, errors, freshness, and secret handling.
+    - Include tablet/touch behavior for dashboard/grid UX.
+  tasks:
+    - Keep tasks small enough for bounded implementation/review sessions.
+    - Preserve phase ordering and dependencies.
+    - Include validation with each meaningful task group.
+    - Separate migrations/security-rule changes from unrelated UI work when practical.
+  apply:
+    guidelines:
+      - Follow the accepted spec/design exactly; do not implement deferred ideas opportunistically.
+      - Use strict TypeScript; avoid any, ts-ignore, and unsafe contract-bypassing casts.
+      - Keep provider secrets out of browser code and logs.
+      - Keep PocketBase access centralized rather than creating clients in arbitrary components.
+      - Update task progress only after validation evidence exists.
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Do not rewrite archived OpenSpec changes.
+    - After archive, update project/context.md and project/phase-map.md to verified truth.

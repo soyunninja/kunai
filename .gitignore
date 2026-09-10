@@ -1,0 +1,26 @@
+# Dependencies / Nuxt build output
+node_modules/
+.nuxt/
+.output/
+.dist/
+dist/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# PocketBase runtime data
+pb_data/
+
+# Test output
+coverage/
+
+# OS/editor noise
+.DS_Store
+*.swp
+
+# Local logs
+*.log
+# Local Pi runtime state
+.atl/
