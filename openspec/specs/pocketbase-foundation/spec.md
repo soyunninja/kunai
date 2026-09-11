@@ -2,29 +2,29 @@
 
 ## Purpose
 
-Create a documented, secure, centralized local PocketBase configuration boundary that prepares later data access without creating authentication, schema, or product data.
+Create a documented, secure, server-side local PocketBase configuration validation boundary that prepares later work without deciding authentication or ordinary user-data access.
 
 ## Requirements
 
-### Requirement: Centralized PocketBase boundary
+### Requirement: Server-side PocketBase configuration validation boundary
 
-The application MUST define one small, consistent PocketBase endpoint and client/data-access configuration boundary. Application components MUST NOT create ad hoc PocketBase clients. The boundary MUST NOT implement authentication, session persistence, privileged service access, collection schemas, user CRUD, or product-record operations; the Nuxt SSR/client session strategy remains deferred to Phase 0002.
+The application MUST define one small, consistent server-side boundary that validates and exposes the configured PocketBase endpoint to Foundation-owned server code. The boundary MUST perform no network I/O and MUST NOT require the PocketBase SDK. It does not select the definitive Nuxt/PocketBase client/server access strategy: authentication, session handling, and ordinary user-data access are deferred to Phase 0002. Any future operation requiring secrets, credentials, or privileged access MUST remain server-side.
 
-#### Scenario: A component needs future PocketBase access
+#### Scenario: Server startup receives a valid endpoint configuration
 
-- GIVEN a future application component requires a PocketBase operation
-- WHEN the operation is added after Phase 0001
-- THEN it can use the centralized boundary rather than constructing a PocketBase client inside the component
+- GIVEN the application is started with a syntactically valid configured endpoint
+- WHEN the Foundation server-side configuration boundary initializes
+- THEN it exposes a normalized endpoint configuration without contacting PocketBase
 
-#### Scenario: The foundation is inspected for early product behavior
+#### Scenario: Phase 0002 selects an access strategy
 
-- GIVEN the Phase 0001 foundation is running or reviewed
-- WHEN PocketBase-related code and configuration are examined
-- THEN no authentication, session, privileged access, schema, user CRUD, or product-record behavior is present
+- GIVEN Phase 0002 is ready to implement authentication or ordinary user-data access
+- WHEN it chooses the Nuxt/PocketBase access strategy
+- THEN it may use the Foundation configuration validation boundary without treating that boundary as a decision that all PocketBase access is server-side
 
 ### Requirement: Explicit runtime configuration and secret boundary
 
-The foundation MUST define and document its environment-variable strategy. Once application runtime configuration exists, the repository MUST include a safe `.env.example` that documents required values without containing usable secrets. A PocketBase endpoint MAY be exposed through public runtime configuration only when the selected client boundary requires browser access; its public classification and rationale MUST be explicit. Administrative credentials, encryption keys, OAuth secrets or tokens, provider credentials, and other server-only secrets MUST NOT be committed, included in public runtime configuration or browser bundles, or logged.
+The foundation MUST define and document its environment-variable strategy. Once application runtime configuration exists, the repository MUST include a safe `.env.example` that documents required values without containing usable secrets. A PocketBase endpoint MUST NOT be exposed through public runtime configuration in Phase 0001 unless the Foundation implementation proves a specific need and documents the classification and rationale. Any later browser/client exposure belongs to the Phase 0002 access-strategy decision. Administrative credentials, encryption keys, OAuth secrets or tokens, provider credentials, and other server-only secrets MUST NOT be committed, included in public runtime configuration or browser bundles, or logged.
 
 #### Scenario: A maintainer configures a local endpoint
 
@@ -64,8 +64,4 @@ The repository MUST document a version-controlled strategy for future PocketBase
 - WHEN maintainers prepare that change
 - THEN repository documentation identifies where its migration belongs and how it is applied under version control
 
-#### Scenario: The foundation repository is reviewed
-
-- GIVEN Phase 0001 has no genuine schema requirement
-- WHEN its PocketBase assets are inspected
-- THEN no manufactured schema, user collection, owner rule, migration, or committed runtime data is present
+The migration strategy is planning guidance only. It does not require a Phase 0001 schema, collection, owner rule, or migration.

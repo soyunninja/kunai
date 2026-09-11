@@ -12,9 +12,8 @@ context: |
   SDD: phase briefs are in docs/phases/. OpenSpec artifacts are authoritative for each active change. Do not create docs/specs/.
   Current phase: 0001 Foundation. Read project/context.md and docs/phases/0001-foundation.md.
 
-# No real test runner exists before Phase 0001. Refresh this through /sdd-init
-# after the testing foundation is implemented.
-strict_tdd: false
+# Verified Phase 0001 Vitest baseline: node and Nuxt/happy-dom tests.
+strict_tdd: true
 
 rules:
   proposal:
@@ -46,11 +45,11 @@ rules:
       - Keep provider secrets out of browser code and logs.
       - Keep PocketBase access centralized rather than creating clients in arbitrary components.
       - Update task progress only after validation evidence exists.
-    tdd: false
-    test_command: ""
+    tdd: true
+    test_command: "pnpm test"
   verify:
-    test_command: ""
-    build_command: ""
+    test_command: "pnpm test"
+    build_command: "pnpm build"
     coverage_threshold: 0
   archive:
     - Do not rewrite archived OpenSpec changes.

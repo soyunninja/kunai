@@ -8,7 +8,7 @@ Provide a reproducible, quality-checked Nuxt application foundation for later pr
 
 ### Requirement: Accepted application stack
 
-The repository MUST provide one conventional application foundation using Nuxt 4, Vue 3, strict TypeScript, Tailwind CSS 4, and pnpm. Dependency resolution MUST be reproducible from the version-controlled repository state. The foundation MUST NOT introduce a monorepo, major UI framework, state-management framework, grid framework, provider SDK, or replacement for an accepted stack technology.
+The repository MUST provide one conventional application foundation using Nuxt 4, Vue 3, strict TypeScript, Tailwind CSS 4, and pnpm. Dependency resolution MUST be reproducible from the version-controlled repository state. The foundation MUST NOT introduce a monorepo, major UI framework, state-management framework, grid framework, or replacement for an accepted stack technology. It MUST NOT add the PocketBase SDK unless a demonstrated Foundation requirement makes it necessary.
 
 #### Scenario: A maintainer prepares a clean checkout
 
@@ -24,7 +24,7 @@ The repository MUST provide one conventional application foundation using Nuxt 4
 
 ### Requirement: Executable development and quality workflow
 
-The repository MUST document and expose runnable workflows for installation, local development, linting, strict type checking, testing, and production building. The development workflow MUST start the Nuxt application locally, and the production workflow MUST produce a production build. Each quality command MUST perform its stated check; the test command MUST execute meaningful foundation checks rather than succeed solely because no tests are selected.
+The repository MUST document and expose runnable workflows for installation, local development, linting, strict type checking, testing, and production building. The development workflow MUST start the Nuxt application locally, and the production workflow MUST produce a production build. Each quality command MUST perform its stated check; the test command MUST execute meaningful checks for behavior implemented by Phase 0001 rather than succeed solely because no tests are selected.
 
 #### Scenario: A maintainer verifies the foundation
 
@@ -32,11 +32,11 @@ The repository MUST document and expose runnable workflows for installation, loc
 - WHEN the maintainer runs each documented development and quality workflow
 - THEN development starts locally and lint, strict type checking, tests, and production build each complete successfully
 
-#### Scenario: A foundation behavior regresses
+#### Scenario: An implemented foundation behavior regresses
 
-- GIVEN a checkable foundation behavior such as runtime configuration handling or theme selection is broken
+- GIVEN an implemented Phase 0001 behavior such as runtime configuration handling or theme selection is broken
 - WHEN the test workflow runs
-- THEN at least one meaningful foundation test MUST fail
+- THEN at least one meaningful foundation test MUST fail for that implemented behavior
 
 ### Requirement: Testing capability record
 
@@ -54,12 +54,14 @@ After the selected test baseline has been implemented and its workflow has been 
 - WHEN the SDD capability state is recorded
 - THEN it MUST NOT be represented as a verified strict-TDD capability
 
-### Requirement: Deferred product behavior remains absent
+### Requirement: Neutral foundation shell
 
-The foundation MUST provide only neutral application placeholders and MUST NOT implement authentication, account provisioning, onboarding, persisted preferences, dashboard records or navigation, widget registry or behavior, layouts or grid interactions, Settings, external providers, or product data. It MUST NOT seed Home, Travel, Dev, widgets, users, collections, or product records.
+The foundation MUST render a neutral application shell that demonstrates the implemented visual baseline without product-domain content. The shell MUST include a main landmark, a concise foundation heading and explanatory text, and the non-persistent appearance control defined by the visual-foundation specification.
 
 #### Scenario: A maintainer opens the foundation shell
 
 - GIVEN the Phase 0001 application is running
-- WHEN the maintainer inspects available UI and application behavior
-- THEN it presents only neutral foundation content and no dashboard, account, Settings, widget, or provider feature is available
+- WHEN the maintainer opens the root shell
+- THEN it renders the foundation heading, explanatory text, main landmark, and appearance control
+
+Deferred product scope is controlled by the change proposal, specifications, design, and tasks. Tests in this phase cover only implemented foundation behavior.

@@ -8,13 +8,13 @@ The final product name is intentionally undecided and is not a blocker.
 
 ## Current stage
 
-Product discovery is sufficiently defined to start implementation using SDD.
+Phase 0001 Foundation is verified and archived. The Nuxt/tooling baseline, endpoint/theme behavior, clean-directory validation, and manual browser/PocketBase matrix have recorded evidence, with canonical OpenSpec specifications synced under `openspec/specs/`.
 
-No application code should be assumed to exist before Phase 0001.
+No Phase 0002 implementation or delivery work is authorized by this archive closure.
 
 ## Active phase
 
-`0001 — Foundation`
+`0001 — Foundation` (archived)
 
 Phase brief:
 
@@ -76,6 +76,6 @@ Mobile remains supported but is not the primary density/design target.
 
 ## Next action
 
-Run the gentle-ai SDD flow for `phase-0001-foundation`.
+Begin SDD planning for `phase-0002-auth-onboarding` only when explicitly authorized.
 
-Do not start Phase 0002 until Phase 0001 is verified and archived.
+Do not implement, commit, push, open a PR, or otherwise deliver Phase 0002 as part of this archive closure.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Establish a restrained, accessible dark-first visual baseline for the foundation shell without creating product navigation or Settings behavior.
+Establish a restrained, accessible dark-first visual baseline for the foundation shell without creating product navigation or Settings behavior. Its scenarios verify rendered and interactive visual behavior only; deferred product scope is controlled by the OpenSpec artifacts rather than absence-only tests.
 
 ## Requirements
 

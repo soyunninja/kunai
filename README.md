@@ -21,6 +21,10 @@ Humans should read `START_HERE.md` first.
 
 Pi automatically loads `AGENTS.md`. The agent must then read the project context and the active phase brief before starting work.
 
+## Local development
+
+See [local development setup](docs/development/local-setup.md) for the pinned toolchain, frozen installation, private endpoint configuration, Nuxt commands, and independent PocketBase workflow.
+
 ## Accepted stack
 
 - Nuxt 4

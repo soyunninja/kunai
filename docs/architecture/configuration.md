@@ -4,14 +4,15 @@
 
 Environment variables are for installation/server configuration and secrets that belong to the deployment.
 
-Examples may include:
+Phase 0001 implements one private server runtime value:
 
-- PocketBase server URL;
-- server encryption key;
-- OAuth app credentials;
-- provider app-level keys if a provider uses deployment credentials.
+| Environment variable | Nuxt key | Phase 0001 exposure |
+| --- | --- | --- |
+| `NUXT_POCKETBASE_URL` | `runtimeConfig.pocketbaseUrl` | Private server configuration only |
 
-Only explicitly public values may be exposed through Nuxt public runtime config.
+The Foundation validates this endpoint at Nitro server startup without network I/O. It accepts absolute HTTP/HTTPS endpoints with optional ports and path prefixes, and rejects credentials, query parameters, fragments, or malformed values. It does not choose the authentication, session, SDK, or ordinary user-data access strategy; Phase 0002 owns that decision. Secret-requiring operations remain server-side.
+
+Only explicitly public values may be exposed through Nuxt public runtime config. Phase 0001 declares no application public runtime keys.
 
 ## User configuration
 

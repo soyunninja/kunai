@@ -2,7 +2,7 @@
 
 ## Decision summary
 
-Build one SSR-enabled Nuxt 4 application at the repository root. Use Vue 3, strict TypeScript, Tailwind CSS 4 through its Vite plugin, pnpm, Nuxt ESLint, and Vitest with Nuxt test utilities. Render only a neutral shell with a transient appearance selector. Prepare a private, validated PocketBase endpoint boundary without installing its SDK, connecting automatically, or selecting an authentication/session architecture.
+Build one SSR-enabled Nuxt 4 application at the repository root. Use Vue 3, strict TypeScript, Tailwind CSS 4 through its Vite plugin, pnpm, Nuxt ESLint, and Vitest with Nuxt test utilities. Render only a neutral shell with a transient appearance selector. Prepare a server-side PocketBase endpoint configuration and validation boundary without installing its SDK, connecting automatically, or deciding the future authentication or ordinary user-data access strategy.
 
 This document is an implementation plan, not evidence of implemented or verified software. This design phase changes only this file. All paths outside the active change below are prospective apply-phase changes.
 
@@ -12,7 +12,7 @@ Inputs read directly: `explore.md`, `proposal.md`, all three capability specific
 
 Exploration reports a documentation-only repository; available root inventory corroborates no application/package baseline. There is no existing application implementation to preserve. CodeGraph and shell execution are unavailable in this executor, so git root confirmation, index initialization, dependency discovery, and commands were not performed. Filesystem reads were the fallback. No compatibility, test, browser, or build success is claimed.
 
-The scope explicitly targets this Nuxt repository, not `packages/coding-agent`. Existing product decisions remain authoritative. Authentication, SSR/client sessions, dashboard rules, widget contracts, breakpoints, and providers remain later-phase decisions.
+The scope explicitly targets this Nuxt repository, not `packages/coding-agent`. Existing product decisions remain authoritative. Authentication, SSR/client PocketBase access, ordinary user-data access, dashboard rules, widget contracts, breakpoints, and providers remain later-phase decisions. Secret-requiring PocketBase and integration operations remain server-side.
 
 ## 1. Application and tooling
 
@@ -47,7 +47,7 @@ A frozen install and all checks below must prove that matrix before subsequent i
 | `build` | `nuxt build` | Produce `.output/` without contacting PocketBase. |
 | `preview` | `nuxt preview` | Optional local production-output inspection. |
 
-Do not add workspace configuration, a state manager, a UI kit, a grid library, a color-mode module, a provider SDK, or a generic repository abstraction.
+Do not add workspace configuration, a state manager, a UI kit, a grid library, a color-mode module, a generic repository abstraction, or the PocketBase SDK: Foundation's server-side configuration validation does not require it.
 
 ## 2. Theme and neutral shell
 
@@ -76,7 +76,7 @@ Use flat backgrounds, thin borders, no shadow/gradient, wrapping content, visibl
 
 ### Endpoint-only boundary
 
-Select the specification's endpoint/data-access configuration option, not a preconstructed SDK client. `server/utils/pocketbase.ts` exports a small pure validator and configuration accessor:
+Select a server-side endpoint configuration and validation boundary, not a preconstructed SDK client or a future data-access strategy. `server/utils/pocketbase.ts` exports a small pure validator and configuration accessor:
 
 - `parsePocketBaseEndpoint(value: unknown): string` returns a normalized absolute base URL or throws a sanitized configuration error.
 - `getPocketBaseConfig(config: { pocketbaseUrl: unknown }): Readonly<{ endpoint: string }>` delegates to that validator and exposes only the endpoint to future server-side data-access code.
@@ -85,17 +85,17 @@ Accept absolute HTTP/HTTPS URLs with a hostname, optional port and path prefix. 
 
 `server/plugins/pocketbase-config.ts` obtains private `useRuntimeConfig()` when Nitro starts and invokes the accessor once for validation. A missing or malformed endpoint prevents serving the application with a clear sanitized configuration failure. Do not evaluate environment values at Nuxt configuration import time or require a live service during build. Verify that the chosen Nitro version exhibits these startup semantics in both dev and production output.
 
-No network request occurs in this boundary. A syntactically valid but unreachable endpoint does not prevent the neutral shell from rendering. Future server operations consume this boundary rather than constructing configuration in components. Phase 0002 must decide SDK creation/lifetime and SSR/client sessions before adding authentication. If browser PocketBase access is later selected, explicitly amend the public configuration classification; do not expose the endpoint preemptively.
+No network request occurs in this boundary. A syntactically valid but unreachable endpoint does not prevent the neutral shell from rendering. Phase 0002 must decide SDK use and lifetime, authentication/session handling, and whether ordinary user-data access runs through the client, the server, or a bounded combination. The Foundation validation boundary is reusable configuration input, not a mandate that all PocketBase access is server-side. If browser PocketBase access is later selected, explicitly classify any required public endpoint then; do not expose it preemptively. Secret-requiring operations remain server-side.
 
 ### Configuration classification
 
 | Value | Nuxt key | Exposure | Example |
 |---|---|---|---|
-| `NUXT_POCKETBASE_URL` | `runtimeConfig.pocketbaseUrl`, default empty string | Server-only installation configuration; URL itself is not a secret | `http://127.0.0.1:8090` |
+| `NUXT_POCKETBASE_URL` | `runtimeConfig.pocketbaseUrl`, default empty string | Private server runtime configuration for Phase 0001; URL itself is not a secret, but this phase does not expose it publicly | `http://127.0.0.1:8090` |
 
-Declare no app-specific public runtime values and no unused secret placeholders. `.env.example` contains the single safe local endpoint and a short comment describing the server-only classification. Local `.env` is ignored; never import dotenv or read `process.env` inside components. Nuxt's development tooling loads local `.env`; direct production Node startup requires the variable supplied by the process environment. The empty runtime default is intentional: missing configuration must not silently select localhost.
+Declare no app-specific public runtime values and no unused secret placeholders. `.env.example` contains the single safe local endpoint and a short comment describing the private Phase 0001 runtime classification. Local `.env` is ignored; never import dotenv or read `process.env` inside components. Nuxt's development tooling loads local `.env`; direct production Node startup requires the variable supplied by the process environment. The empty runtime default is intentional: missing configuration must not silently select localhost.
 
-No credentials, auth store, SDK singleton, superuser bootstrap, health API route, user CRUD, schema, or provider integration is created. Native PocketBase internal initialization when running the binary is not an application schema migration and remains untracked runtime data.
+No credentials, auth store, SDK singleton, superuser bootstrap, health API route, user CRUD, schema, or provider integration is created by this Foundation plan. These scope constraints are governed by the OpenSpec artifacts and are not absence-only test targets. Native PocketBase internal initialization when running the binary is not an application schema migration and remains untracked runtime data.
 
 ## 4. Local PocketBase and future migrations
 
@@ -153,9 +153,9 @@ Do not create empty `pages/`, `layouts/`, `components/`, `shared/`, `pb_hooks/`,
 |---|---|
 | Accepted stack and workflow | Recorded package/runtime versions; frozen clean install; successful lint, strict typecheck, meaningful tests, production build. Verify app, server, tests, and Vue templates are covered by typecheck. |
 | Endpoint handling | Accept local HTTP, HTTPS, port and path prefix; stable trailing-slash normalization; reject blank/missing/non-string, malformed/relative, forbidden protocol, credentials/query/fragment. Errors never contain submitted credential-like strings. |
-| Private boundary | Accessor uses supplied runtime config; startup rejects invalid/missing config; source review confirms no SDK/component clients, raw-value logging, or app-owned public runtime keys. |
+| Server-side configuration validation | Accessor uses supplied runtime config; startup rejects invalid/missing config; validation performs no network I/O; errors do not disclose raw submitted values. |
 | Theme behavior | Fresh mount dark; actual selector updates dark/light/system state and document head attribute; fresh mount resets dark; cleanup prevents leaked head state between tests. |
-| No fake tests | Deliberately break a theme selection and an endpoint validation case locally; show corresponding failures, restore, and rerun green. Never commit the deliberate regressions. |
+| No fake tests | Deliberately break an implemented theme selection case and an implemented endpoint validation case locally; show corresponding failures, restore, and rerun green. Never commit deliberate regressions. Do not add tests whose only purpose is proving future auth/dashboard/widget/provider features are absent. |
 
 Use strict RED/GREEN for behavioral work once the runner works; capture the bootstrap limitation honestly. happy-dom cannot prove browser CSS media queries, accessibility, or real SSR hydration. Do not count a mocked media-query test as evidence of visual correctness.
 
@@ -185,7 +185,7 @@ NUXT_POCKETBASE_URL=http://127.0.0.1:8090 node .output/server/index.mjs
 
 Verify the built server accepts runtime endpoint configuration rather than a baked-in build value. Separately start the built output with the variable absent and with a malformed dummy value: both must fail with sanitized guidance. Building and running unit tests must not need a reachable PocketBase instance.
 
-Record command, working directory, tool versions, exit status, and relevant sanitized output in the later verification artifact. A passed `build` alone is not runtime evidence. Inspect tracked files with `git ls-files` and review public Nuxt payload/browser source for accidental credentials, endpoint disclosure, local `.env`, database data, or binaries. Do not paste secret-bearing output into evidence.
+Record command, working directory, tool versions, exit status, and relevant sanitized output in the later verification artifact. A passed `build` alone is not runtime evidence. Inspect tracked files with `git ls-files` and review public Nuxt payload/browser source for accidental credentials, unintended endpoint disclosure, local `.env`, database data, or binaries. Do not paste secret-bearing output into evidence.
 
 ### Manual browser matrix
 
@@ -197,7 +197,7 @@ Record browser/version, viewport, OS/emulated preference, result, and screenshot
 4. Keyboard Tab/arrow selection, visible non-color focus cues, accessible label, and touch targets; inspect desktop, tablet portrait/landscape, and narrow mobile widths plus 200% zoom. These are test viewports, not persisted layout breakpoints.
 5. Reduced-motion enabled: no animation. Check text contrast at least 4.5:1 and meaningful control/focus contrast at least 3:1 in both palettes.
 6. Valid endpoint with PocketBase stopped: shell still works; health command fails clearly. Start PocketBase: unauthenticated health succeeds without creating application records.
-7. Browser network/storage inspection: no PocketBase/auth/provider requests, no theme persistence, no private runtime endpoint or secrets. No dashboard/Settings/widget/account UI.
+7. Browser network/storage inspection: the Foundation shell makes no network request as part of endpoint validation, does not persist the transient theme selection, and exposes no private runtime endpoint or secrets.
 
 ### Capability refresh
 
@@ -205,9 +205,9 @@ Only after meaningful `pnpm test` and `pnpm build` pass, refresh the existing Op
 
 ## 7. Delivery, rollout, and rollback
 
-Recommended task ordering: resolve/pin tooling and prove the runner; implement/test private endpoint handling; implement/test theme and shell; document local runtime/migration strategy; perform clean-install, production-runtime, privacy, and browser verification; refresh truthful capabilities and tracking; verify and archive before Phase 0002.
+Recommended task ordering: resolve/pin tooling and prove the runner; implement/test server-side endpoint configuration validation; implement/test theme and shell; document local runtime/migration strategy; perform clean-install, production-runtime, privacy, and browser verification; refresh truthful capabilities and tracking; verify and archive before Phase 0002.
 
-Bootstrap plus tests/docs/lockfile is likely to exceed the 400-changed-line review budget. The parent must measure/forecast during tasks and pause under `ask-on-risk` before selecting delivery slices or accepting an exception. This design does not authorize chained PRs, a chain strategy, or `size:exception`. Logical work units are planning aids, not publishing consent.
+The generated `pnpm-lock.yaml` is excluded from the 400-line manual review limit. The parent must measure and forecast the remaining changes by conceptual cohesion and risk during tasks, then pause under `ask-on-risk` before selecting delivery slices or accepting an exception. Do not split solely because of lockfile size. This design does not authorize chained PRs, a chain strategy, or `size:exception`. Logical work units are planning aids, not publishing consent.
 
 There is no user-data rollout or migration. Revert foundation implementation work units to restore the documentation-only baseline, retaining OpenSpec history. Do not delete local `.env`, PocketBase data, or backups during rollback. Correct capability/project records if verified tooling is removed. Archive only after required automated/manual evidence passes with no unresolved critical verification blocker.
 
@@ -216,6 +216,6 @@ There is no user-data rollout or migration. Revert foundation implementation wor
 - Exact dependency and PocketBase releases still require resolution and recorded validation; no network/command verification was available during design.
 - Nitro startup validation must be proven not to break the build and to reject missing deployment configuration at actual server startup.
 - Nuxt's reactive head cleanup and happy-dom limitations require both component checks and real-browser hydration/theme evidence.
-- Endpoint-only configuration deliberately defers SDK ownership and authentication; Phase 0002 must not mistake this for a finished CRUD boundary.
+- Server-side endpoint configuration validation deliberately defers SDK ownership, authentication, and ordinary user-data access; Phase 0002 must not mistake it for a decision that all PocketBase access is server-side or for a finished CRUD boundary.
 - The local guide must distinguish Nuxt `.env` loading, direct Node process environment, and PocketBase service availability.
 - Review-budget delivery requires the parent's human-control gate; no product decision currently blocks task planning.

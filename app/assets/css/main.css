@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+:root,
+[data-theme="dark"],
+[data-theme="system"] {
+  color-scheme: dark;
+  --foundation-background: #111315;
+  --foundation-surface: #191d20;
+  --foundation-text: #f2f4f5;
+  --foundation-muted: #a7b0b7;
+  --foundation-border: #4d5860;
+  --foundation-focus: #72d6a0;
+  --foundation-success: #72d6a0;
+  --foundation-warning: #e9c46a;
+  --foundation-error: #f58c8c;
+  --foundation-radius: 0.25rem;
+  --foundation-space: 1rem;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --foundation-background: #f6f7f4;
+  --foundation-surface: #ffffff;
+  --foundation-text: #182026;
+  --foundation-muted: #52606a;
+  --foundation-border: #70808a;
+  --foundation-focus: #006c42;
+  --foundation-success: #006c42;
+  --foundation-warning: #8c5a00;
+  --foundation-error: #b42318;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    color-scheme: light;
+    --foundation-background: #f6f7f4;
+    --foundation-surface: #ffffff;
+    --foundation-text: #182026;
+    --foundation-muted: #52606a;
+    --foundation-border: #70808a;
+    --foundation-focus: #006c42;
+    --foundation-success: #006c42;
+    --foundation-warning: #8c5a00;
+    --foundation-error: #b42318;
+  }
+}
+
+@theme inline {
+  --color-foundation-background: var(--foundation-background);
+  --color-foundation-surface: var(--foundation-surface);
+  --color-foundation-text: var(--foundation-text);
+  --color-foundation-muted: var(--foundation-muted);
+  --color-foundation-border: var(--foundation-border);
+  --color-foundation-focus: var(--foundation-focus);
+  --color-foundation-success: var(--foundation-success);
+  --color-foundation-warning: var(--foundation-warning);
+  --color-foundation-error: var(--foundation-error);
+  --font-family-foundation-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+html {
+  background: var(--foundation-background);
+}
+
+body {
+  min-width: 20rem;
+  margin: 0;
+  background: var(--foundation-background);
+  color: var(--foundation-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.foundation-shell {
+  display: grid;
+  min-height: 100vh;
+  padding: clamp(1rem, 4vw, 3rem);
+  place-items: start center;
+}
+
+.foundation-panel {
+  width: min(100%, 46rem);
+  border: 1px solid var(--foundation-border);
+  border-radius: var(--foundation-radius);
+  background: var(--foundation-surface);
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.foundation-eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--foundation-muted);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.2;
+}
+
+.foundation-panel > p:not(.foundation-eyebrow) {
+  max-width: 42rem;
+  margin: 1rem 0 0;
+  color: var(--foundation-muted);
+}
+
+.foundation-field {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  font-weight: 700;
+}
+
+.foundation-field select {
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--foundation-border);
+  border-radius: var(--foundation-radius);
+  background: var(--foundation-background);
+  color: var(--foundation-text);
+  padding: 0.5rem 0.75rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--foundation-focus);
+  outline-offset: 3px;
+}
