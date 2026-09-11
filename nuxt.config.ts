@@ -10,6 +10,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     pocketbaseUrl: '',
+    appOrigin: '',
+    sessionCookieMode: '',
   },
   typescript: {
     strict: true,

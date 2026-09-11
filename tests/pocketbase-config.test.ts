@@ -65,6 +65,8 @@ describe('PocketBase configuration startup validation', () => {
     expect(() =>
       validatePocketBaseRuntimeConfig({
         pocketbaseUrl: 'http://127.0.0.1:8090/unreachable',
+        appOrigin: 'http://localhost:3000',
+        sessionCookieMode: 'development-http',
       }),
     ).not.toThrow()
     expect(fetchSpy).not.toHaveBeenCalled()
@@ -73,7 +75,49 @@ describe('PocketBase configuration startup validation', () => {
 
   it.each([undefined, 'not a URL'])('fails startup validation for %j', (value) => {
     expect(() =>
-      validatePocketBaseRuntimeConfig({ pocketbaseUrl: value }),
+      validatePocketBaseRuntimeConfig({
+        pocketbaseUrl: value,
+        appOrigin: 'https://kunai.example.test',
+        sessionCookieMode: 'secure',
+      }),
     ).toThrowError('NUXT_POCKETBASE_URL')
+  })
+
+  it.each([undefined, '', 'not a URL'])('fails startup validation for unsafe app origin %j', (value) => {
+    expect(() =>
+      validatePocketBaseRuntimeConfig({
+        pocketbaseUrl: 'http://127.0.0.1:8090',
+        appOrigin: value,
+        sessionCookieMode: 'secure',
+      }),
+    ).toThrowError('NUXT_APP_ORIGIN')
+  })
+
+  it('fails startup validation when secure session cookies are configured for HTTP', () => {
+    expect(() =>
+      validatePocketBaseRuntimeConfig({
+        pocketbaseUrl: 'http://127.0.0.1:8090',
+        appOrigin: 'http://localhost:3000',
+        sessionCookieMode: 'secure',
+      }),
+    ).toThrowError('secure session cookie mode requires an HTTPS NUXT_APP_ORIGIN')
+  })
+
+  it('allows explicit development HTTP mode only with an HTTP app origin', () => {
+    expect(() =>
+      validatePocketBaseRuntimeConfig({
+        pocketbaseUrl: 'http://127.0.0.1:8090',
+        appOrigin: 'http://localhost:3000',
+        sessionCookieMode: 'development-http',
+      }),
+    ).not.toThrow()
+
+    expect(() =>
+      validatePocketBaseRuntimeConfig({
+        pocketbaseUrl: 'http://127.0.0.1:8090',
+        appOrigin: 'https://kunai.example.test',
+        sessionCookieMode: 'development-http',
+      }),
+    ).toThrowError('development-http session cookie mode requires an HTTP NUXT_APP_ORIGIN')
   })
 })
