@@ -414,11 +414,24 @@ describe('PocketBase 0.40.3 compatibility spike', () => {
   })
 
   it('validates batch rollback and hook rejection semantics for partial errors', async () => {
+    const isolatedDashboardA = await clientA.collection('compat_dashboards').create({
+      owner: userA.id,
+      name: 'Batch Home A',
+      seedKey: 'batch-home-a',
+    })
+    const isolatedDashboardB = await clientB.collection('compat_dashboards').create({
+      owner: userB.id,
+      name: 'Batch Home B',
+      seedKey: 'batch-home-b',
+    })
+
+    expect(isolatedDashboardA.id).toBeTruthy()
+
     const batch = clientA.createBatch()
     batch.collection('compat_preferences').create({ owner: userA.id, label: 'batch-created' })
     batch.collection('compat_widgets').create({
       owner: userA.id,
-      dashboard: dashboardB.id,
+      dashboard: isolatedDashboardB.id,
       type: 'clock',
       seedKey: 'clock',
       config: { version: 1 },
