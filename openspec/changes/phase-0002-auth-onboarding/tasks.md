@@ -25,8 +25,51 @@ Chain strategy: not applicable.
 1. Confirm PocketBase 0.40.3 behavior with a disposable harness before code relies on it.
 2. Establish and prove schema/rules/hooks isolation before browser-facing auth or onboarding writes.
 3. Establish request-scoped session and same-origin boundaries before login, SSR, or protected routes.
-4. Establish atomic, idempotent seed persistence before exposing onboarding completion UI.
-5. Do not implement avatar selection until owner assets and final stable keys are delivered.
+4. Establish Checkpoint 4A server-side onboarding persistence and atomic Home seed before exposing final onboarding UI.
+5. Establish Checkpoint 4B onboarding UI only after 4A is reviewed and the avatar asset gate is satisfied.
+6. Do not implement visual avatar selection until owner assets and final stable keys are delivered.
+
+## Checkpoint 4A / 4B split
+
+Checkpoint 4 remains **Onboarding + atomic Home seed**, split explicitly for implementation and review control.
+
+### Checkpoint 4A — Onboarding persistence + atomic Home seed
+
+Includes:
+
+- server-side onboarding contract and validation;
+- profile persistence;
+- `user_preferences`;
+- timezone persistence/validation;
+- nullable/unconfigured location persistence/validation;
+- avatar-key contract and server-side allowlist/parity seam, without visual selection;
+- server-side completion endpoint;
+- real Home seed;
+- Search, Clock, Weather, and Bookmarks seed records;
+- idempotence;
+- retry;
+- concurrency;
+- partial-state recovery;
+- unique-conflict recovery;
+- completion guard;
+- `onboardingCompleted` only after the full seed exists and validates.
+
+Does not include the final onboarding form, visual avatar picker, geolocation UI, final timezone/location interaction, or final visual experience.
+
+### Checkpoint 4B — Onboarding UI + avatar/location/timezone UX
+
+Includes:
+
+- real onboarding page/form;
+- visual avatar selection using owner-provided 8-bit assets;
+- timezone detection/correction UX;
+- browser geolocation after explicit action;
+- location skip/denial/failure UX;
+- loading/error/success states;
+- keyboard/touch accessibility;
+- UI connection to the 4A completion endpoint.
+
+The avatar asset gate blocks 4B, not server-side 4A work. Preserve one review checkpoint after 4A completes and another review checkpoint after 4B completes before continuing to the next Phase 0002 block.
 
 ## 1. PocketBase compatibility validation
 
@@ -76,37 +119,37 @@ Chain strategy: not applicable.
 
 - [ ] **7.2 GREEN — Add original-event SSR session initialization, global routing middleware, and client session composable.** Objective: resolve auth before page setup, use only safe Nuxt state, clear visible state on 401, retry transient failures without stale protected data, and avoid an internal SSR API fetch that loses Set-Cookie. **Probable files:** `app/app.vue`, `app/plugins/session.server.ts`, `app/middleware/auth.global.ts`, `app/composables/useSession.ts`, `server/utils/session.ts`, `tests/ssr/`, `tests/*.nuxt.test.ts`. **Dependency:** 7.1 RED suite. **Completion criteria:** SSR/client routes follow the approved three-state table with no return URL feature, client SDK, local storage, or protected-content flash. **Tests/validation:** Pass SSR state matrix, hydration parity, 401 navigation, no-store header, and simultaneous User A/User B SSR tests. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
-## 8. Profile and onboarding persistence
+## 8. Profile and onboarding persistence (Checkpoint 4A)
 
 - [ ] **8.1 RED — Define pure onboarding input, location, and seed-payload validation tests.** Objective: specify exact parsing for display name, approved avatar key, IANA timezone, discriminated `defaultLocation`, unknown fields, bounds, and the four placeholder config payloads. **Probable files:** `shared/types/auth.ts`, `shared/types/onboarding.ts`, `shared/validation/onboarding.ts`, `tests/unit/onboarding-validation.test.ts`. **Dependency:** 2.2 schema contract and 7.2 safe session state. **Completion criteria:** Tests reject hidden timezone fallbacks, manual coordinate requirements, invalid coordinates, unrecognized fields, and location labels represented as geocoded data. **Tests/validation:** Run focused RED unit suite with valid null/label/coordinates cases and malformed JSON cases. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
 
 - [ ] **8.2 GREEN — Implement shared pure DTO parsers and bounded persisted onboarding draft retrieval.** Objective: provide no-`any` validators and `GET /api/onboarding` that expose only incomplete users’ persisted profile/preferences draft without writing or exposing internal auth data. **Probable files:** `shared/types/auth.ts`, `shared/types/onboarding.ts`, `shared/validation/onboarding.ts`, `server/api/onboarding/index.get.ts`, `server/utils/onboarding.ts`, `tests/unit/`, `tests/server/onboarding-routes.test.ts`. **Dependency:** 8.1 RED tests and 3.2 access rules. **Completion criteria:** Unknown or invalid values receive field-level errors; complete users receive a bounded conflict; missing partial data maps explicitly to empty/null draft state. **Tests/validation:** Pass parser and GET route tests for anonymous, incomplete, complete, malformed stored state, and no secret exposure. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
 
-## 9. Avatar registry integration
+## 9. Avatar registry integration (4A contract, 4B asset gate)
 
-- [ ] **9.1 Prepare the avatar registry contract and parity-test seam without inventing an avatar.** Objective: define the immutable `{key, src, label}` manifest interface, root-relative path constraints, unknown-key behavior, and a PocketBase-compatible manifest/fixture format that can be validated in both runtimes. **Probable files:** `shared/avatars.ts`, `shared/types/onboarding.ts`, `pb_hooks/lib/avatar-manifest.js`, `tests/unit/avatar-registry.test.ts`, `tests/integration/pocketbase/avatar-parity.test.ts`, `public/avatars/README.md`. **Dependency:** 8.1 validation contract and 1.1 hook runtime findings. **Completion criteria:** The contract has zero fabricated selectable entries, no upload path, and tests fail clearly until owner-supplied assets with final keys are present. **Tests/validation:** Verify duplicate keys, unsafe paths, unknown persisted keys, and registry/PocketBase allowlist parity using fixtures only. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+- [ ] **9.1 Prepare the avatar registry contract and parity-test seam without inventing an avatar.** Objective: define the immutable `{key, src, label}` manifest interface, root-relative path constraints, unknown-key behavior, and a PocketBase-compatible manifest/fixture format that can be validated in both runtimes. This is the Checkpoint 4A avatar-key contract only; it does not render selectable product avatars. **Probable files:** `shared/avatars.ts`, `shared/types/onboarding.ts`, `pb_hooks/lib/avatar-manifest.js`, `tests/unit/avatar-registry.test.ts`, `tests/integration/pocketbase/avatar-parity.test.ts`, `public/avatars/README.md`. **Dependency:** 8.1 validation contract and 1.1 hook runtime findings. **Completion criteria:** The contract has zero fabricated selectable product entries, no upload path, and fixture-only tests prove duplicate-key rejection, unsafe-path rejection, unknown-key behavior, and shared/PocketBase allowlist parity without requiring owner assets. **Tests/validation:** Verify duplicate keys, unsafe paths, unknown persisted keys, and registry/PocketBase allowlist parity using clearly separated fixtures only. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
 - [ ] **9.2 BLOCKED — Integrate owner-supplied avatar assets and stable keys, then enable final avatar selection validation.** Objective: populate the approved manifest and bundled assets only after the owner provides real files and final stable keys. **Probable files:** `public/avatars/*`, `shared/avatars.ts`, `pb_hooks/lib/avatar-manifest.js`, `tests/unit/avatar-registry.test.ts`, `tests/integration/pocketbase/avatar-parity.test.ts`. **Dependency:** Owner supplies assets and stable keys; 9.1 contract complete. **Completion criteria:** Every displayed asset maps to one stable approved key, both runtimes accept exactly the same keys, unknown keys produce an explicit unavailable state, and arbitrary uploads remain absent. **Tests/validation:** Run manifest parity and asset-path tests; manually inspect all supplied assets at tablet/desktop density. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
-## 10. Location/timezone onboarding UX
+## 10. Location/timezone onboarding UX (Checkpoint 4B)
 
 - [ ] **10.1 RED — Create component tests for correctable timezone and explicit geolocation lifecycle.** Objective: specify client-only timezone detection when no persisted value exists; accessible form feedback; explicit-action-only geolocation; secure-context/unavailable/denied/timeout/failure paths; optional non-geocoded label; clear/skip behavior; and no coordinate entry requirement. **Probable files:** `tests/onboarding.nuxt.test.ts`, `app/composables/useOnboarding.ts`, `app/pages/onboarding.vue`. **Dependency:** 8.2 draft/validation behavior; 9.2 is required only for enabled avatar-selection tests. **Completion criteria:** Tests fail before UI implementation and prove no automatic geolocation call, no hidden UTC fallback, and retained in-memory form data after recoverable failure. **Tests/validation:** Run Nuxt/happy-dom RED tests with mocked `Intl` and Geolocation APIs. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
 
-- [ ] **10.2 GREEN — Implement the accessible location/timezone onboarding form controls, excluding avatar finalization until its asset gate is open.** Objective: render correctable timezone, location detection/clear/optional-label controls, validation/live status/focus handling, loading/retry behavior, and keyboard/touch-safe interaction without provider calls. **Probable files:** `app/pages/onboarding.vue`, `app/composables/useOnboarding.ts`, `app/components/AvatarPicker.vue`, `tests/onboarding.nuxt.test.ts`. **Dependency:** 10.1 RED tests; 9.2 for rendering a selectable avatar picker in a completable flow. **Completion criteria:** Denied or unavailable geolocation remains non-blocking, labels are explicitly non-geocoded, no browser data is persisted outside approved submit operations, and no weather/geocoding/search provider is added. **Tests/validation:** Pass component tests for validation, keyboard controls, live feedback, touch targets, geolocation outcomes, and reduced-motion baseline. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+- [ ] **10.2 GREEN — Implement the accessible onboarding form and connect it to the 4A completion endpoint.** Objective: render correctable timezone, location detection/clear/optional-label controls, final avatar picker when 9.2 is unblocked, submit wiring, validation/live status/focus handling, loading/retry behavior, success/error states, and keyboard/touch-safe interaction without provider calls. **Probable files:** `app/pages/onboarding.vue`, `app/composables/useOnboarding.ts`, `app/components/AvatarPicker.vue`, `tests/onboarding.nuxt.test.ts`. **Dependency:** 10.1 RED tests and 9.2 for rendering a selectable avatar picker in a completable flow. **Completion criteria:** Denied or unavailable geolocation remains non-blocking, labels are explicitly non-geocoded, no browser data is persisted outside approved submit operations, and no weather/geocoding/search provider is added. **Tests/validation:** Pass component tests for validation, keyboard controls, live feedback, touch targets, geolocation outcomes, reduced-motion baseline, and completion-endpoint submit states. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
-## 11. Idempotent Home seed
+## 11. Idempotent Home seed (Checkpoint 4A)
 
 - [ ] **11.1 RED — Build an integration test matrix for empty and partial onboarding seed recovery.** Objective: express expected reusable IDs/counts/configs for no state, profile-only, preferences-only, Home-only, and each missing-widget state; include completed replay preservation and no Travel/Dev/layout creation. **Probable files:** `tests/integration/pocketbase/onboarding-seed.test.ts`, `tests/integration/pocketbase/support/fixtures.ts`, `tests/server/onboarding-complete.test.ts`. **Dependency:** 2.2 migration, 3.2 rules, and 8.2 validation. **Completion criteria:** Tests fail before seed service exists and assert exactly one `home` seed and four fixed widget seed keys/types with null layouts and approved placeholder configs. **Tests/validation:** Run RED cases against fresh/partial disposable databases with normal user credentials. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
 
 - [ ] **11.2 GREEN — Implement authenticated load-or-create seed operations with durable conflict recovery.** Objective: ensure preferences, Home, and four seed records in fixed order using owner-derived identities; reload exact winners after unique conflicts; preserve valid IDs; reject incompatible/corrupt records rather than deleting or relabeling them. **Probable files:** `server/utils/onboarding.ts`, `server/api/onboarding/complete.post.ts`, `tests/integration/pocketbase/onboarding-seed.test.ts`, `tests/server/onboarding-complete.test.ts`. **Dependency:** 11.1 RED matrix and 1.1 confirmed unique/batch semantics. **Completion criteria:** Retry converges without a read-then-create-only defense; config matches the validated snapshot; layouts remain `null`; no dashboard editor, functional widget, bookmark record, or provider call is added. **Tests/validation:** Pass empty/partial/replay seed cases and direct normal-user access checks. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
-## 12. Onboarding retry, concurrency, and partial failure
+## 12. Onboarding retry, concurrency, and partial failure (Checkpoint 4A)
 
 - [ ] **12.1 RED — Define failure-injection and concurrent-completion integration tests for truthful finalization.** Objective: test failure after each durable stage, token expiry between stages, lost success response, unique/busy conflicts, simultaneous identical/conflicting submissions, direct premature completion, and concurrent deletion/mutation. **Probable files:** `tests/integration/pocketbase/onboarding-concurrency.test.ts`, `tests/server/onboarding-complete.test.ts`, `tests/integration/pocketbase/support/failure-injection.ts`. **Dependency:** 11.2 seed recovery succeeds sequentially. **Completion criteria:** Tests fail until final batch and PocketBase transactional completion guard exist; expected winner/snapshot, marker, IDs, and rollback outcomes are explicit. **Tests/validation:** Run independent-client concurrent tests and verify persisted state directly after every injected failure. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
 
 - [ ] **12.2 GREEN — Implement bounded final batch, transactional PocketBase completion guard, and retry policy.** Objective: atomically apply the final preferences/profile/placeholder snapshot and completion marker, reuse event-bound transaction context, reject corrupt same-key data and completed-profile rewrites, and retry only confirmed retryable conflicts a bounded number of times. **Probable files:** `server/utils/onboarding.ts`, `server/api/onboarding/complete.post.ts`, `pb_hooks/auth_onboarding.pb.js`, `pb_hooks/lib/onboarding-validation.js`, `tests/integration/pocketbase/onboarding-concurrency.test.ts`. **Dependency:** 12.1 RED tests and 1.1 proven transaction/batch/hook semantics. **Completion criteria:** Completion is set only when the full predicate is true in the same transaction; failed finalization rolls back its snapshot; first successful conflicting finalization wins; no in-process lock, superuser CRUD, or Nuxt-only authorization substitutes for the guard. **Tests/validation:** Pass concurrency, busy/unique recovery, batch rollback, direct-premature-completion, concurrent deletion, and retry-exhaustion tests. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
-- [ ] **12.3 REFACTOR — Stabilize recoverable onboarding conflict responses and client retry/resume behavior.** Objective: map seed conflicts, exhausted retries, expiry, and transient failures to bounded user-safe results while allowing GET/refresh to discover a competing completed result. **Probable files:** `server/utils/onboarding.ts`, `server/utils/api-error.ts`, `app/composables/useOnboarding.ts`, `tests/server/onboarding-complete.test.ts`, `tests/onboarding.nuxt.test.ts`. **Dependency:** 12.2 atomic persistence passes. **Completion criteria:** The user never sees false completion; valid persisted partial data is reusable; a completed replay is read-only and does not overwrite customization; error messages expose no internal schema or credentials. **Tests/validation:** Pass route/component retry and lost-response scenarios with sanitized response assertions. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+- [ ] **12.3 REFACTOR — Stabilize recoverable onboarding conflict responses and API retry/resume behavior.** Objective: map seed conflicts, exhausted retries, expiry, and transient failures to bounded user-safe route results while allowing GET/refresh to discover a competing completed result. This remains Checkpoint 4A server/API behavior, not the final onboarding UI. **Probable files:** `server/utils/onboarding.ts`, `server/utils/api-error.ts`, `tests/server/onboarding-complete.test.ts`. **Dependency:** 12.2 atomic persistence passes. **Completion criteria:** The API never reports false completion; valid persisted partial data is reusable; a completed replay is read-only and does not overwrite customization; error messages expose no internal schema or credentials. **Tests/validation:** Pass route retry and lost-response scenarios with sanitized response assertions. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
 
 ## 13. Protected minimal Home landing
 
@@ -149,7 +192,8 @@ Owner-approved checkpoints for Phase 0002 apply. At each checkpoint, stop and re
 | PocketBase compatibility | 1.1 | Approve the exact PocketBase/SDK/hook/transaction mechanism or stop for design/spec/owner approval. |
 | Schema + owner isolation | 2.2 and 3.3 | Review migrations, reversibility, direct normal-user rules, and relational ownership protection. |
 | Auth/session boundary | 5.3, 6.2, and 7.2 | Review cookie/origin/request-isolation, auth APIs, and SSR routing before onboarding completion is exposed. |
-| Onboarding + atomic Home seed | 12.2 and 12.3 | Review concurrency, partial failure, batch rollback, direct API completion guard, and retry/resume behavior. |
+| Checkpoint 4A — Onboarding persistence + atomic Home seed | 8.2, 9.1, 11.2, 12.2, and 12.3 | Review server-side onboarding validation/persistence, avatar-key contract, Home/Search/Clock/Weather/Bookmarks seed, idempotence, concurrency, partial failure, batch rollback, direct API completion guard, and retry/resume behavior before any final onboarding UI is exposed. |
+| Checkpoint 4B — Onboarding UI + avatar/location/timezone UX | 9.2 and 10.2 | Review the real onboarding form, owner-supplied 8-bit avatar selection, timezone correction UX, explicit geolocation UX, loading/error/success states, accessibility, and wiring to the 4A completion endpoint before continuing to the next Phase 0002 block. |
 | Security/manual validation | 14.2, 15.1, and 16.1 | Review adversarial results, available browser/manual evidence, deployment-validation disposition, and ADR accuracy before final validation. |
 | Final verify/archive | 18.2 | Human review/delivery decision before `/sdd-verify`; archive and Phase 0003 remain separate owner-authorized actions. |
 
@@ -158,7 +202,7 @@ Owner-approved checkpoints for Phase 0002 apply. At each checkpoint, stop and re
 | Item | Status / required action |
 |---|---|
 | Delivery chain strategy | Resolved: no chained PRs for Phase 0002. Work stays on `feat/phase-0002-auth-onboarding`, split by checkpoints and small coherent commits. No push, merge, or PR without explicit authorization. |
-| Avatar assets and stable keys | Blocks tasks 9.2 and completion of avatar selection/onboarding UI; owner must supply real bundled assets and final keys. Registry contract, types, validation, and tests may use clearly separated test fixtures before product assets exist. |
+| Avatar assets and stable keys | Blocks Checkpoint 4B tasks 9.2 and 10.2 visual avatar/onboarding UI completion; owner must supply real bundled assets and final keys. It does not block Checkpoint 4A server-side onboarding persistence, Home seed, completion endpoint, or avatar-key contract work. Registry contract, types, validation, and tests may use clearly separated test fixtures before product assets exist. |
 | PocketBase compatibility result | Task 1.1 is a hard implementation gate; unsupported migration/rule/hook/batch/transaction semantics require design/spec revision and owner approval before an architecture change. |
 | HTTPS/proxy deployment details | Phase 0002 must implement secure development/production cookie behavior, automated checks for flags/configuration, documentation of HTTPS/reverse-proxy requirements, and token/private-config leakage checks. Manual validation against a real HTTPS/proxy deployment is required only if such an environment is available during Phase 0002; otherwise record it as pending for Hardening/release without weakening security for local tests. |
 | Phase 0003 | Explicitly out of scope; no task starts dashboard tabs, lifecycle, navigation, or settings shell. |
