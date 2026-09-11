@@ -14,6 +14,15 @@ The approved change explicitly narrows older onboarding UX's manual city search/
 
 ### Current implementation and constraints
 
+#### Checkpoint 4 split
+
+Checkpoint 4 remains the formal product block: **Onboarding + atomic Home seed**. It is split into two explicit SDD checkpoints so server-side correctness is not blocked by final onboarding UX assets.
+
+- **Checkpoint 4A — Onboarding persistence + atomic Home seed** includes server-side onboarding validation, profile persistence, `user_preferences`, timezone, nullable/unconfigured location, the avatar-key contract, the completion endpoint, real Home/Search/Clock/Weather/Bookmarks seed persistence, idempotence, retry, concurrency, partial-state recovery, unique-conflict recovery, the completion guard, and setting `onboardingCompleted` only after the complete seed exists.
+- **Checkpoint 4B — Onboarding UI + avatar/location/timezone UX** includes the real onboarding page/form, visual avatar selection using owner-provided 8-bit assets, timezone detection/correction UX, browser geolocation after explicit user action, location skip/denial/failure handling, loading/error/success states, keyboard/touch accessibility, and wiring the UI to the 4A completion endpoint.
+
+4A does **not** include the final onboarding form, visual avatar picker, geolocation UI, final timezone/location interaction, or final visual experience. The avatar asset gate blocks 4B, not the server-side 4A persistence and seed work. Keep a native review checkpoint after 4A completes, and another checkpoint after 4B completes before continuing to the next Phase 0002 block.
+
 - Nuxt 4.4.8, Vue 3.5.40, strict TypeScript, Tailwind 4, pnpm; one root application, not `packages/coding-agent` or a monorepo.
 - `app/app.vue` is a neutral main landmark with a non-persistent appearance selector; `useTheme` already supports dark/light/system.
 - `server/utils/pocketbase.ts` validates the private endpoint; its startup plugin performs no network I/O. Preserve that behavior.
@@ -145,9 +154,9 @@ Rule syntax or hook plumbing may change to match the runtime; security and atomi
 
 `defaultLocation` is a discriminated value: null; `{kind:'label',label}`; or `{kind:'coordinates',latitude,longitude,label:null|string,source:'browser'}`. Label is trimmed, nonempty and ≤120 characters. Coordinates must be finite latitude [-90,90] and longitude [-180,180], accepted only together. A label has no implied coordinates or resolved city. Do not persist accuracy, altitude, movement history or browser permission status. Client coordinates are user input, not verified physical location.
 
-The form offers “Use browser location”, “Clear location / skip” and an optional location-label input explicitly marked not resolved to a weather location. Permission is requested only on the first action in a secure context; denial/timeout/unavailable/failure are nonfatal status messages. A label can annotate coordinates or stand alone; clearing removes coordinates. No mandatory manual latitude/longitude fields and no external calls. Timezone uses Intl detection, a correctable text/selection input, and server IANA validation with explicit feedback; do not derive it from coordinates or silently select UTC.
+The 4A server contract accepts null/unconfigured location and validates any submitted label/coordinates/timezone without browser UI assumptions. The 4B form offers “Use browser location”, “Clear location / skip” and an optional location-label input explicitly marked not resolved to a weather location. Permission is requested only on the first action in a secure context; denial/timeout/unavailable/failure are nonfatal status messages. A label can annotate coordinates or stand alone; clearing removes coordinates. No mandatory manual latitude/longitude fields and no external calls. Timezone uses Intl detection, a correctable text/selection input, and server IANA validation with explicit feedback; do not derive it from coordinates or silently select UTC.
 
-`shared/avatars.ts` will contain a small immutable registry of `{key,src,label}` entries. Assets live in `public/avatars/`; only approved root-relative bundled paths are allowed. Keys are independent of filenames, unique and stable; persist only the key. The registry and PocketBase validation allowlist must come from the same reviewed owner-supplied manifest, with a test proving parity across runtimes. Do not invent entries now. Unknown persisted keys display an explicit unavailable-avatar state and prevent incomplete onboarding completion, not an invented fallback avatar. Owner supplies assets and final keys before avatar implementation is accepted.
+4A defines the avatar-key persistence and validation contract without visual selection or fabricated product assets. `shared/avatars.ts` will contain a small immutable registry of `{key,src,label}` entries. Assets live in `public/avatars/`; only approved root-relative bundled paths are allowed. Keys are independent of filenames, unique and stable; persist only the key. The registry and PocketBase validation allowlist must come from the same reviewed owner-supplied manifest, with a test proving parity across runtimes. Do not invent entries now. Unknown persisted keys display an explicit unavailable-avatar state and prevent incomplete onboarding completion, not an invented fallback avatar. Owner supplies assets and final keys before 4B visual avatar implementation is accepted.
 
 | Seed key / type | Initial config |
 |---|---|
