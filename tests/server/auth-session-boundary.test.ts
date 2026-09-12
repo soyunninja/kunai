@@ -340,21 +340,138 @@ describe('Checkpoint 3 auth/session boundary', () => {
   it('keeps concurrent User A and User B session restoration isolated', async () => {
     const authA = await normalClient(harness.baseUrl, userAEmail)
     const authB = await normalClient(harness.baseUrl, userBEmail)
-    const sessionA = resolveSession({
-      event: createEvent(),
+    const eventA = createEvent()
+    const eventB = createEvent()
+    const cookiesA = createCookieJar({ kunai_session: authA.pb.authStore.token })
+    const cookiesB = createCookieJar({ kunai_session: authB.pb.authStore.token })
+
+    const [sessionA, sessionB] = await Promise.all([
+      resolveSession({
+        event: eventA,
+        runtimeConfig: runtime(harness.baseUrl),
+        cookies: cookiesA.controller,
+      }),
+      resolveSession({
+        event: eventB,
+        runtimeConfig: runtime(harness.baseUrl),
+        cookies: cookiesB.controller,
+      }),
+    ])
+
+    expect(sessionA).toMatchObject({ session: { id: authA.user.id, displayName: 'User A' } })
+    expect(sessionB).toMatchObject({ session: { id: authB.user.id, displayName: 'User B' } })
+    expect(sessionA.session?.id).not.toBe(authB.user.id)
+    expect(sessionB.session?.id).not.toBe(authA.user.id)
+    expect(eventA.context.pocketBaseClient).not.toBe(eventB.context.pocketBaseClient)
+    expect(eventA.context.pocketBaseClient?.authStore.record?.id).toBe(authA.user.id)
+    expect(eventB.context.pocketBaseClient?.authStore.record?.id).toBe(authB.user.id)
+    expect(eventA.context.pocketBaseAuthToken).toBe(cookiesA.jar.get('kunai_session')?.value)
+    expect(eventB.context.pocketBaseAuthToken).toBe(cookiesB.jar.get('kunai_session')?.value)
+    expect(cookiesA.jar.get('kunai_session')?.value).not.toBe(cookiesB.jar.get('kunai_session')?.value)
+  })
+
+  it('keeps an invalid concurrent session failure scoped to its own request', async () => {
+    const authB = await normalClient(harness.baseUrl, userBEmail)
+    const invalidEvent = createEvent()
+    const validEvent = createEvent()
+    const invalidCookies = createCookieJar({ kunai_session: 'invalid.expired.token' })
+    const validCookies = createCookieJar({ kunai_session: authB.pb.authStore.token })
+
+    const [invalidSession, validSession] = await Promise.all([
+      resolveSession({
+        event: invalidEvent,
+        runtimeConfig: runtime(harness.baseUrl),
+        cookies: invalidCookies.controller,
+      }),
+      resolveSession({
+        event: validEvent,
+        runtimeConfig: runtime(harness.baseUrl),
+        cookies: validCookies.controller,
+      }),
+    ])
+
+    expect(invalidSession.session).toBeNull()
+    expect(invalidCookies.jar.get('kunai_session')?.deleted).toBe(true)
+    expect(invalidEvent.context.pocketBaseAuthIntent).toBeUndefined()
+    expect(invalidEvent.context.pocketBaseAuthToken).toBeUndefined()
+    expect(invalidEvent.context.pocketBaseClient?.authStore.token).toBe('')
+
+    expect(validSession.session?.id).toBe(authB.user.id)
+    expect(validSession.session?.id).not.toBe(invalidSession.session?.id)
+    expect(validCookies.jar.get('kunai_session')?.deleted).not.toBe(true)
+    expect(validEvent.context.pocketBaseAuthToken).toBe(validCookies.jar.get('kunai_session')?.value)
+  })
+
+  it('keeps a transient refresh outage scoped, retains its retryable cookie, and restores after recovery', async () => {
+    const authA = await normalClient(harness.baseUrl, userAEmail)
+    const authB = await normalClient(harness.baseUrl, userBEmail)
+    const outageEvent = createEvent()
+    const validEvent = createEvent()
+    const outageCookies = createCookieJar({ kunai_session: authA.pb.authStore.token })
+    const validCookies = createCookieJar({ kunai_session: authB.pb.authStore.token })
+
+    const [outageResult, validSession] = await Promise.allSettled([
+      resolveSession({
+        event: outageEvent,
+        runtimeConfig: runtime('http://127.0.0.1:1'),
+        cookies: outageCookies.controller,
+      }),
+      resolveSession({
+        event: validEvent,
+        runtimeConfig: runtime(harness.baseUrl),
+        cookies: validCookies.controller,
+      }),
+    ])
+
+    expect(outageResult.status).toBe('rejected')
+    if (outageResult.status === 'rejected') {
+      expect(outageResult.reason).toMatchObject({ statusCode: 503, code: 'session_unavailable' })
+    }
+    expect(outageCookies.jar.get('kunai_session')).toMatchObject({ value: authA.pb.authStore.token })
+    expect(outageCookies.jar.get('kunai_session')?.deleted).not.toBe(true)
+    expect(outageEvent.context.pocketBaseClient).toBeUndefined()
+    expect(outageEvent.context.pocketBaseAuthIntent).toBeUndefined()
+    expect(outageEvent.context.pocketBaseAuthToken).toBeUndefined()
+
+    expect(validSession.status).toBe('fulfilled')
+    if (validSession.status === 'fulfilled') {
+      expect(validSession.value.session?.id).toBe(authB.user.id)
+      expect(validSession.value.session?.id).not.toBe(authA.user.id)
+    }
+    expect(validCookies.jar.get('kunai_session')?.deleted).not.toBe(true)
+
+    const recovered = await resolveSession({
+      event: outageEvent,
       runtimeConfig: runtime(harness.baseUrl),
-      cookies: createCookieJar({ kunai_session: authA.pb.authStore.token }).controller,
-    })
-    const sessionB = resolveSession({
-      event: createEvent(),
-      runtimeConfig: runtime(harness.baseUrl),
-      cookies: createCookieJar({ kunai_session: authB.pb.authStore.token }).controller,
+      cookies: outageCookies.controller,
     })
 
-    await expect(Promise.all([sessionA, sessionB])).resolves.toMatchObject([
-      { session: { id: authA.user.id, displayName: 'User A' } },
-      { session: { id: authB.user.id, displayName: 'User B' } },
-    ])
+    expect(recovered.session?.id).toBe(authA.user.id)
+    expect(recovered.session?.id).not.toBe(authB.user.id)
+    expect(outageEvent.context.pocketBaseAuthToken).toBe(outageCookies.jar.get('kunai_session')?.value)
+  })
+
+  it('keeps repeated same-request session resolution coherent for the same auth intent', async () => {
+    const authA = await normalClient(harness.baseUrl, userAEmail)
+    const event = createEvent()
+    const cookies = createCookieJar({ kunai_session: authA.pb.authStore.token })
+
+    const first = await resolveSession({
+      event,
+      runtimeConfig: runtime(harness.baseUrl),
+      cookies: cookies.controller,
+    })
+    const second = await resolveSession({
+      event,
+      runtimeConfig: runtime(harness.baseUrl),
+      cookies: cookies.controller,
+    })
+
+    expect(first.session?.id).toBe(authA.user.id)
+    expect(second.session?.id).toBe(authA.user.id)
+    expect(event.context.pocketBaseClient?.authStore.record?.id).toBe(authA.user.id)
+    expect(event.context.pocketBaseAuthToken).toBe(cookies.jar.get('kunai_session')?.value)
+    expect(cookies.jar.get('kunai_session')?.deleted).not.toBe(true)
   })
 
   it('rejects cross-origin unsafe requests and permits configured same-origin requests', () => {

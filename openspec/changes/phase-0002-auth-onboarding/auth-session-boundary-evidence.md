@@ -58,7 +58,10 @@ Excluded from browser responses: PocketBase token, cookie value, password, email
 | Transient refresh outage preserves cookie | Unreachable PocketBase returns `session_unavailable`, leaves the cookie intact for retry, and a later recovered request restores the session without forcing login. | PASS |
 | Logout clears session | Logout clears request AuthStore and cookie without exposing token. | PASS |
 | Request A/B isolated | Separate request events produce distinct PB clients/AuthStores for User A/User B; anonymous→authenticated, authenticated→anonymous, and different-token memoized calls fail explicitly; same-token repeated calls reuse the request client; refreshed token metadata is synchronized after session refresh; transient refresh failures clear request-local stale client metadata for same-request retry. | PASS |
-| Concurrent A/B isolation | Parallel session restoration for User A/User B returns correct independent identities. | PASS |
+| Concurrent A/B isolation | Parallel session restoration for User A/User B returns correct independent identities, distinct request clients/AuthStores, and per-request rotated cookie/auth metadata. | PASS |
+| Concurrent invalid + valid isolation | An invalid concurrent cookie resolves to anonymous, clears only its own cookie/request auth metadata/AuthStore, and does not affect a simultaneous valid user's restored identity or cookie. | PASS |
+| Concurrent outage + valid isolation | A transient PocketBase refresh outage returns `session_unavailable`/503, clears stale server request metadata, preserves that request's retryable cookie, does not affect a simultaneous valid user, and restores correctly after the runtime becomes reachable again. | PASS |
+| Same-request auth intent coherence | Repeated `resolveSession` calls with the same auth intent inside one request remain on the same user identity and keep event auth metadata aligned with the active cookie. | PASS |
 | Cross-origin unsafe rejected | Mismatched origin plus cross-site metadata rejected. | PASS |
 | Same-origin allowed | Configured origin plus `same-origin` Fetch Metadata accepted. | PASS |
 | Errors/logging without secrets | Invalid login test spies console and verifies safe message does not include password/email. | PASS |
@@ -77,10 +80,85 @@ pnpm test
 git diff --check
 ```
 
-Focused results: `tests/server/auth-session-boundary.test.ts` passed, 18 tests; `tests/server/auth-routes-h3.test.ts` passed, 6 tests.
+Focused results: `tests/server/auth-session-boundary.test.ts` passed, 21 tests; `tests/server/auth-routes-h3.test.ts` previously passed, 6 tests.
+
+## Task 7.1 RED routing evidence
+
+Added `tests/ssr/auth-routing.nuxt.test.ts` as a RED Nuxt suite defining the expected SSR/client-navigation auth state machine for `/login`, `/onboarding`, and `/` without implementing middleware, session plugins/composables, or final pages.
+
+Covered states and scenarios:
+
+- anonymous access to `/` and `/onboarding` redirects to `/login` before protected/foundation content renders;
+- anonymous `/login` renders only login content;
+- authenticated incomplete users route to onboarding and away from login;
+- authenticated completed users render Home and are redirected away from onboarding;
+- expired sessions clear the session cookie and redirect to login;
+- temporarily unavailable session validation returns an unavailable state without protected or stale identity content;
+- authenticated SSR responses require private/no-store caching;
+- rotated Set-Cookie propagation remains attached to the original SSR response;
+- hydration exposes only the browser-safe session DTO shape;
+- simultaneous User A/User B route renders remain isolated;
+- client navigation follows the same route-state expectations.
+
+RED command:
+
+```sh
+pnpm vitest run tests/ssr/auth-routing.nuxt.test.ts --reporter=verbose
+```
+
+RED result: **FAIL as expected**, 13 failing assertions. Current implementation still renders `app/app.vue` foundation shell with status 200 and no auth routing/session state. This is the expected pre-7.2 failure mode.
+
+Quality checks after adding the RED suite:
+
+```sh
+pnpm lint
+pnpm typecheck
+git diff --check
+```
+
+Quality result: **PASS**.
+
+## Task 7.2 GREEN routing/session evidence
+
+Implemented the approved auth/routing state machine without starting onboarding persistence, avatar UI, geolocation, Home seed, widgets, or Checkpoint 4A.
+
+Implemented surfaces:
+
+- `app/plugins/session.server.ts` resolves the session during SSR from the original H3 event using `resolveSession` and `h3CookieController`; it does not perform an internal `/api/auth/session` fetch, preserving Set-Cookie propagation on the original response.
+- `app/middleware/auth.global.ts` applies the route state machine for `/`, `/login`, and `/onboarding` and sets response status/headers for unavailable/authenticated SSR paths.
+- `app/composables/useSession.ts` stores only `SafeSessionDto | null` plus validation status/message in Nuxt state and uses a request epoch to suppress stale client responses from overlapping session/login/logout calls.
+- `app/utils/auth-routing.ts` centralizes the route decision table used by middleware and focused tests.
+- Minimal `app/pages/login.vue`, `app/pages/onboarding.vue`, and `app/pages/index.vue` render route shells only; no onboarding form, avatar UI, geolocation, Home seed, dashboard, or widgets were introduced.
+- `app/app.vue` now renders `<NuxtPage />` while preserving the existing appearance selector contract.
+
+Final state machine:
+
+| State | `/login` | `/onboarding` | `/` |
+|---|---|---|---|
+| Anonymous | render Login | 302 to `/login` | 302 to `/login` |
+| Authenticated, onboarding incomplete | 302 to `/onboarding` | render Onboarding | 302 to `/onboarding` |
+| Authenticated, onboarding complete | 302 to `/` | 302 to `/` | render Home |
+| Expired/invalid session | anonymous behavior with session cookie cleared | anonymous behavior with session cookie cleared | anonymous behavior with session cookie cleared |
+| Session validation unavailable | 503 unavailable page, no protected stale identity | 503 unavailable page, no protected stale identity | 503 unavailable page, no protected stale identity |
+
+Validation commands:
+
+```sh
+pnpm vitest run tests/ssr/auth-routing.nuxt.test.ts tests/ssr/session-composable.nuxt.test.ts --reporter=verbose
+pnpm lint
+pnpm typecheck
+pnpm test
+git diff --check
+```
+
+Results: **PASS**. Focused Nuxt routing/session suites passed 15 tests; full `pnpm test` passed 8 files / 81 tests. `git diff --check` reported no whitespace errors.
 
 ## Gate result
 
-Checkpoint 3 result before native review: **PASS**.
+Task 5.3 server-side session race triangulation result: **PASS**.
+Task 7.1 SSR/client-navigation auth state-machine RED suite result: **PASS for RED definition**.
+Task 7.2 SSR/client session routing GREEN result: **PASS**.
 
-No contradiction was found with the approved HttpOnly/request-scoped architecture. No token was exposed to frontend JSON/state/storage, and no superuser credentials are used for application login/session primitives. Checkpoint 4 work was not started.
+No contradiction was found with the approved HttpOnly/request-scoped architecture for server-side session refresh races and request isolation. No token was exposed to frontend JSON/state/storage, and no superuser credentials are used for application login/session primitives. Checkpoint 4 work was not started.
+
+Checkpoint 3 implementation tasks are complete, but Checkpoint 3 is not closed until its final gentle-ai review/acknowledgement is completed. Checkpoint 4A remains blocked.

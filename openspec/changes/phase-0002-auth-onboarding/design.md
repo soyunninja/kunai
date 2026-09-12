@@ -264,3 +264,17 @@ If security fails, disable exposure of protected flows and forward-fix or restor
 - Tooling limitation: shell and CodeGraph intelligence were unavailable, so the supplied workspace context and targeted filesystem reads established the implementation baseline. No git-root command, CodeGraph query, runtime verification or diff check is claimed.
 
 Next recommended: tasks for this change only, after design review. Do not apply, create delivery artifacts or start Phase 0003 from this execution.
+
+
+## Status reconciliation addendum — 2026-09-12
+
+Implementation has progressed beyond the original design-only state. Repository SDD state is reconciled as follows:
+
+- Checkpoint 1 — PocketBase compatibility is completed, reviewed, acknowledged, and committed.
+- Checkpoint 2 — Schema + owner isolation is completed, reviewed, acknowledged, and committed.
+- Checkpoint 3 — Auth/session boundary is completed, reviewed, acknowledged, and committed.
+- The formal Checkpoint 4A / 4B split remains authoritative.
+- The next implementation work is Checkpoint 4A — Onboarding persistence + atomic Home seed.
+- Owner-supplied avatar assets and stable keys do not block Checkpoint 4A; they block Checkpoint 4B visual avatar/onboarding UI completion.
+
+This addendum updates phase status only. It does not implement Checkpoint 4A, change application code, or start Phase 0003.
