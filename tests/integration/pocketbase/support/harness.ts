@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
@@ -64,11 +64,19 @@ export const runPocketBaseCommand = (
 
 const wait = (ms: number) => new Promise((resolveWait) => setTimeout(resolveWait, ms))
 
-const waitForHealth = async (baseUrl: string) => {
+const waitForHealth = async (baseUrl: string, server?: ChildProcessWithoutNullStreams) => {
   const deadline = Date.now() + 15_000
   let lastError: unknown
+  let stdout = ''
+  let stderr = ''
+  server?.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8') })
+  server?.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8') })
 
   while (Date.now() < deadline) {
+    if (server?.exitCode !== null) {
+      throw new Error(`PocketBase exited before health check passed. stdout=${stdout} stderr=${stderr}`)
+    }
+
     try {
       const response = await fetch(`${baseUrl}/api/health`)
       if (response.ok) {
@@ -133,7 +141,7 @@ export const startPocketBase = async (harness: PocketBaseHarness) => {
     '--dev=false',
   ], { stdio: 'pipe' })
 
-  await waitForHealth(harness.baseUrl)
+  await waitForHealth(harness.baseUrl, harness.server)
 }
 
 export const stopPocketBase = async (harness: PocketBaseHarness) => {
@@ -150,7 +158,28 @@ export const stopPocketBase = async (harness: PocketBaseHarness) => {
   }
 }
 
-export const applyMigrations = (harness: PocketBaseHarness) => {
+export const configureDisposableBatchSettings = (
+  harness: PocketBaseHarness,
+  batch: { readonly enabled: boolean, readonly maxRequests: number } = { enabled: true, maxRequests: 4 },
+) => {
+  const migrationDir = join(harness.root, `batch-settings-${batch.enabled ? 'enabled' : 'disabled'}-${batch.maxRequests}`)
+  mkdirSync(migrationDir, { recursive: true })
+  const migrationPath = join(migrationDir, '20200101000000_disposable_batch_settings.js')
+  writeFileSync(migrationPath, `
+migrate((app) => {
+  const settings = app.settings()
+  settings.batch.enabled = ${batch.enabled ? 'true' : 'false'}
+  settings.batch.maxRequests = ${batch.maxRequests}
+  app.save(settings)
+}, () => {})
+`.trimStart())
+  runPocketBaseCommand(harness.binary, ['migrate', 'up', `--dir=${harness.dataDir}`, `--migrationsDir=${migrationDir}`])
+}
+
+export const applyMigrations = (harness: PocketBaseHarness, options: { readonly configureBatch?: boolean } = {}) => {
+  if (options.configureBatch !== false) {
+    configureDisposableBatchSettings(harness)
+  }
   runPocketBaseCommand(harness.binary, ['migrate', 'up', `--dir=${harness.dataDir}`, `--migrationsDir=${harness.migrationsDir}`])
 }
 

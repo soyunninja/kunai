@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process'
 
 import PocketBase, { BaseAuthStore, ClientResponseError } from 'pocketbase'
@@ -172,6 +172,23 @@ migrate((app) => {
 `.trimStart())
 }
 
+const createAuthOnboardingMigrations = async (migrationsDir: string) => {
+  await writeFile(join(migrationsDir, '001_batch_settings_baseline.js'), `
+migrate((app) => {
+  const settings = app.settings()
+  settings.batch.enabled = false
+  settings.batch.maxRequests = 7
+  settings.batch.timeout = 13
+  settings.batch.maxBodySize = 4096
+  app.save(settings)
+}, () => {})
+`.trimStart())
+  await writeFile(
+    join(migrationsDir, '20260911180000_auth_onboarding.js'),
+    await readFile(resolve('pb_migrations/20260911180000_auth_onboarding.js'), 'utf8'),
+  )
+}
+
 const createHooks = async (hooksDir: string) => {
   await writeFile(join(hooksDir, 'compatibility.pb.js'), `
 onRecordUpdateRequest((e) => {
@@ -200,7 +217,7 @@ onRecordUpdateRequest((e) => {
 `.trimStart())
 }
 
-const createHarness = async (): Promise<Harness> => {
+const createHarness = async (createMigrations = createMigration): Promise<Harness> => {
   const root = await mkdtemp(join(tmpdir(), 'kunai-pb-compat-'))
   const migrationsDir = join(root, 'migrations')
   const hooksDir = join(root, 'hooks')
@@ -210,7 +227,7 @@ const createHarness = async (): Promise<Harness> => {
   await mkdir(dataDir)
 
   const binary = await downloadPocketBase(root)
-  await createMigration(migrationsDir)
+  await createMigrations(migrationsDir)
   await createHooks(hooksDir)
 
   const port = 18_000 + Math.floor(Math.random() * 20_000)
@@ -220,12 +237,12 @@ const createHarness = async (): Promise<Harness> => {
   return harness
 }
 
-const startServer = async (harness: Harness) => {
+const startServer = async (harness: Harness, migrationsDir = harness.migrationsDir) => {
   harness.server = spawn(harness.binary, [
     'serve',
     `--http=127.0.0.1:${harness.port}`,
     `--dir=${harness.dataDir}`,
-    `--migrationsDir=${harness.migrationsDir}`,
+    `--migrationsDir=${migrationsDir}`,
     `--hooksDir=${harness.hooksDir}`,
     '--dev=false',
   ], { stdio: 'pipe' })
@@ -286,6 +303,59 @@ const createNormalUser = async (admin: PocketBase, email: string) => {
   })
   return user.id as string
 }
+
+describe('PocketBase auth onboarding migration batch settings', () => {
+  it('leaves existing global batch settings untouched during schema up/down/up', async () => {
+    const harness = await createHarness(createAuthOnboardingMigrations)
+
+    run(harness.binary, ['migrate', 'up', `--dir=${harness.dataDir}`, `--migrationsDir=${harness.migrationsDir}`])
+    run(harness.binary, ['superuser', 'upsert', SUPERUSER_EMAIL, SUPERUSER_PASSWORD, `--dir=${harness.dataDir}`])
+    await startServer(harness)
+    const initialAdmin = await superuserClient(harness.baseUrl)
+    expect((await initialAdmin.settings.getAll()).batch).toEqual({
+      enabled: false,
+      maxRequests: 7,
+      timeout: 13,
+      maxBodySize: 4096,
+    })
+    await expectClientError(initialAdmin.collections.getOne('auth_onboarding_migration_state'), [404])
+
+    await stopServer(harness)
+    const down = spawnSync(harness.binary, [
+      'migrate',
+      'down',
+      `--dir=${harness.dataDir}`,
+      `--migrationsDir=${harness.migrationsDir}`,
+    ], {
+      encoding: 'utf8',
+      env: { ...process.env, KUNAI_ALLOW_DESTRUCTIVE_MIGRATION_DOWN: '1' },
+      input: 'y\n',
+    })
+    expect(down.status, `${down.stdout}\n${down.stderr}`).toBe(0)
+
+    const pausedMigrationsDir = join(harness.root, 'paused-migrations')
+    await mkdir(pausedMigrationsDir)
+    await startServer(harness, pausedMigrationsDir)
+    const afterDownAdmin = await superuserClient(harness.baseUrl)
+    expect((await afterDownAdmin.settings.getAll()).batch).toEqual({
+      enabled: false,
+      maxRequests: 7,
+      timeout: 13,
+      maxBodySize: 4096,
+    })
+
+    await stopServer(harness)
+    run(harness.binary, ['migrate', 'up', `--dir=${harness.dataDir}`, `--migrationsDir=${harness.migrationsDir}`])
+    await startServer(harness)
+    const reappliedAdmin = await superuserClient(harness.baseUrl)
+    expect((await reappliedAdmin.settings.getAll()).batch).toEqual({
+      enabled: false,
+      maxRequests: 7,
+      timeout: 13,
+      maxBodySize: 4096,
+    })
+  }, 180_000)
+})
 
 describe('PocketBase 0.40.3 compatibility spike', () => {
   let harness: Harness

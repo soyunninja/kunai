@@ -34,3 +34,26 @@ export const toApiError = (error: unknown): ApiError => {
 
   return new ApiError(500, 'internal_error', 'Something went wrong.')
 }
+
+const hasStatus = (error: unknown, status: number): boolean => (
+  typeof error === 'object'
+  && error !== null
+  && 'status' in error
+  && error.status === status
+)
+
+export const toOnboardingApiError = (error: unknown): ApiError => {
+  if (error instanceof ApiError) {
+    return error
+  }
+
+  if (hasStatus(error, 401) || hasStatus(error, 403)) {
+    return new ApiError(401, 'unauthenticated', 'Authentication is required.')
+  }
+
+  if (hasStatus(error, 400) || hasStatus(error, 404) || hasStatus(error, 409)) {
+    return new ApiError(409, 'seed_conflict', 'Onboarding seed is incompatible with the required initial state.')
+  }
+
+  return new ApiError(503, 'onboarding_unavailable', 'Onboarding is temporarily unavailable. Please retry.')
+}

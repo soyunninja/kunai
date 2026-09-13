@@ -30,6 +30,9 @@ importers:
       '@vue/test-utils':
         specifier: 2.4.6
         version: 2.4.6
+      '@vvo/tzdb':
+        specifier: 6.198.0
+        version: 6.198.0
       eslint:
         specifier: 9.39.4
         version: 9.39.4(jiti@2.7.0)
@@ -2094,6 +2097,9 @@ packages:
 
   '@vue/test-utils@2.4.6':
     resolution: {integrity: sha512-FMxEjOpYNYiFe0GkaHsnJPXFHxQ6m4t8vI/ElPGpMWxZKpmRvQ33OIrvRXemy6yha03RxhOlQuy+gZMC3CQSow==}
+
+  '@vvo/tzdb@6.198.0':
+    resolution: {integrity: sha512-bNRWBhWYl0edVgyX6AYbhoCM2tk2lXJjGCyO2VDc2xn6Dw8dLd7WGj2DDXkVOkmOIQTNjEAcxrEpIzz5pWVwFg==}
 
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
@@ -7059,6 +7065,8 @@ snapshots:
     dependencies:
       js-beautify: 1.15.4
       vue-component-type-helpers: 2.2.12
+
+  '@vvo/tzdb@6.198.0': {}
 
   abbrev@2.0.0: {}
 

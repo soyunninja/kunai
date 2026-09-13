@@ -30,7 +30,7 @@ Expected SDD change name:
 
 ## Current goal
 
-Continue Phase 0002 with Checkpoint 4A — Onboarding persistence + atomic Home seed when explicitly authorized. Checkpoint 4B remains blocked by owner-supplied avatar assets and stable keys.
+Continue Phase 0002 with Checkpoint 4A — Onboarding persistence + atomic Home seed when explicitly authorized. Owner-supplied avatar assets and stable keys are now available; Checkpoint 4B visual UI remains unstarted and still requires explicit authorization.
 
 ## SDD mode
 
@@ -93,12 +93,12 @@ Completed, reviewed, and acknowledged. Completed within Checkpoint 3:
 - `7.1` — SSR and client-navigation RED state-machine tests.
 - `7.2` — SSR session initialization, global middleware, and client session composable.
 
-Next checkpoint:
+Current Phase 0002 status:
 
-Checkpoint 4A — Onboarding persistence + atomic Home seed is no longer blocked by Checkpoint 3 dependencies and may start only after explicit owner authorization.
+Checkpoint 4A — Onboarding persistence + atomic Home seed is in progress. Tasks `12.2` and `12.3` are implemented, validated, and native-review acknowledged; `12.3` closed under `review-d372f3285f3aabc3`. Task `13.1` has not started and still requires explicit owner authorization.
 
-Avatar assets and final stable keys do not block 4A. They continue to block Checkpoint 4B visual avatar/onboarding UI completion.
+Avatar assets and final stable keys are available as `avatar-01` through `avatar-10`. They unblock registry validation, but Checkpoint 4B visual avatar/onboarding UI completion remains unstarted and requires explicit authorization.
 
 ## Next action
 
-Start Checkpoint 4A — Onboarding persistence + atomic Home seed next only when explicitly authorized. Do not implement Checkpoint 4B, start Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
+Wait for explicit owner authorization before starting `13.1` or any Checkpoint 4B work. Do not implement Checkpoint 4B, start Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.

@@ -156,7 +156,7 @@ Rule syntax or hook plumbing may change to match the runtime; security and atomi
 
 The 4A server contract accepts null/unconfigured location and validates any submitted label/coordinates/timezone without browser UI assumptions. The 4B form offers “Use browser location”, “Clear location / skip” and an optional location-label input explicitly marked not resolved to a weather location. Permission is requested only on the first action in a secure context; denial/timeout/unavailable/failure are nonfatal status messages. A label can annotate coordinates or stand alone; clearing removes coordinates. No mandatory manual latitude/longitude fields and no external calls. Timezone uses Intl detection, a correctable text/selection input, and server IANA validation with explicit feedback; do not derive it from coordinates or silently select UTC.
 
-4A defines the avatar-key persistence and validation contract without visual selection or fabricated product assets. `shared/avatars.ts` will contain a small immutable registry of `{key,src,label}` entries. Assets live in `public/avatars/`; only approved root-relative bundled paths are allowed. Keys are independent of filenames, unique and stable; persist only the key. The registry and PocketBase validation allowlist must come from the same reviewed owner-supplied manifest, with a test proving parity across runtimes. Do not invent entries now. Unknown persisted keys display an explicit unavailable-avatar state and prevent incomplete onboarding completion, not an invented fallback avatar. Owner supplies assets and final keys before 4B visual avatar implementation is accepted.
+4A defines the avatar-key persistence and validation contract without visual selection or fabricated product assets. `shared/avatars.ts` contains the owner-approved immutable registry of `{key,src,label}` entries for `avatar-01` through `avatar-10`. Assets live in `public/avatars/`; only approved root-relative bundled paths are allowed. Keys are independent of filenames, unique and stable; persist only the key. The registry and PocketBase validation allowlist must remain in parity with the PocketBase hook/runtime-compatible manifest, with tests proving shared/PocketBase parity and asset-path existence. Unknown persisted keys display an explicit unavailable-avatar state and prevent incomplete onboarding completion, not an invented fallback avatar. Test-only fixture keys must never enter the production registry. Checkpoint 4B visual avatar implementation remains separate and unstarted.
 
 | Seed key / type | Initial config |
 |---|---|
@@ -256,7 +256,7 @@ If security fails, disable exposure of protected flows and forward-fix or restor
 ## 10. Risks, approvals and handoff
 
 - No new owner product/security approval is needed for the documented server-owned boundary, admin provisioning, null location or deferred grid/providers: these are already approved. No real contradiction was found.
-- Owner-provided real avatar assets and final stable keys remain an apply gate; the design intentionally contains neither invented keys nor substitute assets.
+- Owner-provided real avatar assets and final stable keys are now available as `avatar-01` through `avatar-10`; visual avatar picker/UI work remains a separate Checkpoint 4B authorization gate.
 - PocketBase transaction-bound hook behavior, native batch semantics, rule syntax and SDK version are explicit compatibility gates. Test failure may require a mechanism revision, never a silent weaker guarantee. These are technical verification obligations, not evidence already obtained.
 - HTTPS/proxy configuration and rate-limit deployment need operator verification when an environment exists; if no real deployment is available during Phase 0002, deployment validation remains pending for Hardening/release while automated cookie/security checks and documentation remain required. Stateless logout does not revoke all bearer copies or already-running work.
 - Implementation spans security/schema/UI areas and likely exceeds a single 400-line review unit. Under ask-on-risk, the owner has resolved delivery for Phase 0002: no chained PRs; implement on `feat/phase-0002-auth-onboarding` using risk checkpoints and small coherent commits. No push, merge or PR is authorized without explicit approval.
@@ -275,6 +275,6 @@ Implementation has progressed beyond the original design-only state. Repository 
 - Checkpoint 3 — Auth/session boundary is completed, reviewed, acknowledged, and committed.
 - The formal Checkpoint 4A / 4B split remains authoritative.
 - The next implementation work is Checkpoint 4A — Onboarding persistence + atomic Home seed.
-- Owner-supplied avatar assets and stable keys do not block Checkpoint 4A; they block Checkpoint 4B visual avatar/onboarding UI completion.
+- Owner-supplied avatar assets and stable keys are now available; Checkpoint 4B visual avatar/onboarding UI completion still requires explicit authorization and has not started.
 
 This addendum updates phase status only. It does not implement Checkpoint 4A, change application code, or start Phase 0003.
