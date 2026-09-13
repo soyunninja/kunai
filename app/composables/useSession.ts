@@ -72,6 +72,13 @@ export const useSession = () => {
     validationState.value = 'ready'
   }
 
+  const completeOnboarding = (completedSession: SafeSessionDto): void => {
+    requestEpoch.value += 1
+    session.value = completedSession
+    validationMessage.value = ''
+    validationState.value = 'ready'
+  }
+
   const refreshSession = async (): Promise<SessionEnvelope> => {
     const epoch = beginRequest()
 
@@ -140,6 +147,7 @@ export const useSession = () => {
     validationMessage: readonly(validationMessage),
     isAuthenticated,
     onboardingCompleted,
+    completeOnboarding,
     refreshSession,
     login,
     logout,

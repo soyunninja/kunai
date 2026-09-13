@@ -95,10 +95,12 @@ Completed, reviewed, and acknowledged. Completed within Checkpoint 3:
 
 Current Phase 0002 status:
 
-Checkpoint 4A — Onboarding persistence + atomic Home seed is in progress. Tasks `12.2` and `12.3` are implemented, validated, and native-review acknowledged; `12.3` closed under `review-d372f3285f3aabc3`. Task `13.1` has not started and still requires explicit owner authorization.
+Checkpoint 4A — Onboarding persistence + atomic Home seed is implemented, reviewed, acknowledged, committed, and pushed by the owner.
 
-Avatar assets and final stable keys are available as `avatar-01` through `avatar-10`. They unblock registry validation, but Checkpoint 4B visual avatar/onboarding UI completion remains unstarted and requires explicit authorization.
+Checkpoint 4B Task `10.2` onboarding UI is implemented with passing focused and full automated validation. It renders the real onboarding form, uses the owner-approved `avatar-01` through `avatar-10` assets, preserves the no-upload boundary, detects/corrects timezone without UTC fallback, requests geolocation only by explicit action, supports optional non-geocoded location labels, submits only the 4A DTO, and consumes the final `SafeSessionDto`. The deferred 9.2 desktop/tablet avatar visual inspection is recorded in `openspec/changes/phase-0002-auth-onboarding/checkpoint-4b-evidence.md`.
+
+Task `13.1` has not started and still requires explicit owner authorization.
 
 ## Next action
 
-Wait for explicit owner authorization before starting `13.1` or any Checkpoint 4B work. Do not implement Checkpoint 4B, start Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
+Await the mandated Checkpoint 4B native review before starting `13.1`. Do not start Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
