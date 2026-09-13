@@ -13,3 +13,4 @@ Accepted ADRs document architectural constraints that agents must not silently r
 
 - [ADR 0001 — Application Stack](0001-stack.md)
 - [ADR 0008 — PocketBase migration workflow](0008-pocketbase-migrations.md)
+- [ADR 0009 — Nuxt/PocketBase session boundary](0009-nuxt-pocketbase-session-boundary.md)
