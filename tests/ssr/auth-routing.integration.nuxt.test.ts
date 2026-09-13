@@ -39,6 +39,22 @@ const sessionsByToken: Readonly<Record<string, SessionFixture | 'unavailable'>> 
 
 const startSessionProvider = async () => {
   const server = createServer((request, response) => {
+    if (request.method === 'GET' && request.url?.startsWith('/api/collections/dashboards/records')) {
+      response.writeHead(200, { 'Content-Type': 'application/json' })
+      response.end(JSON.stringify({
+        items: [{
+          id: 'home-completed-user',
+          owner: 'completed-user',
+          seedKey: 'home',
+          name: 'Home',
+          sortOrder: 0,
+          token: 'home-token-sentinel',
+          collectionId: 'dashboards-internal-id',
+        }],
+      }))
+      return
+    }
+
     if (request.method !== 'POST' || request.url !== '/api/collections/users/auth-refresh') {
       response.writeHead(404).end()
       return
@@ -131,16 +147,30 @@ describe('Phase 0002 auth routing SSR integration', () => {
     expect(response.headers.get('set-cookie')).toContain('kunai_session=rotated-incomplete-user-token')
   })
 
-  it('renders Home for complete sessions with a private rotated response', async () => {
+  it('renders only the minimal protected Home contract for complete sessions with a private rotated response', async () => {
     const response = await requestRoute('/', sessionCookie('fixture-completed-user-token'))
     const html = await response.text()
+    const normalizedHtml = html
+      .replace(/<head[\s\S]*?<\/head>/i, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .toLowerCase()
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toContain('private, no-store')
     expect(response.headers.get('set-cookie')).toContain('kunai_session=rotated-completed-user-token')
     expect(html).toContain('Home')
     expect(html).toContain('Completed User')
+    expect(html).toContain('Log out')
+    expect(html).toContain('data-testid="home-name"')
+    expect(html).toContain('data-testid="home-initialized"')
+    expect(html).not.toContain('data-safe-session')
+    expect(html).not.toContain('home-token-sentinel')
+    expect(html).not.toContain('dashboards-internal-id')
     expect(html).not.toContain('Onboarding')
+    for (const futureTerm of ['dashboard tabs', 'grid', 'widget', 'drag', 'edit', 'settings', 'travel', 'dev', 'finance', 'calendar']) {
+      expect(normalizedHtml).not.toContain(futureTerm)
+    }
   })
 
   it('clears invalid sessions before redirecting them to login', async () => {

@@ -99,8 +99,10 @@ Checkpoint 4A — Onboarding persistence + atomic Home seed is implemented, revi
 
 Checkpoint 4B Task `10.2` onboarding UI is implemented with passing focused and full automated validation. It renders the real onboarding form, uses the owner-approved `avatar-01` through `avatar-10` assets, preserves the no-upload boundary, detects/corrects timezone without UTC fallback, requests geolocation only by explicit action, supports optional non-geocoded location labels, submits only the 4A DTO, and consumes the final `SafeSessionDto`. The deferred 9.2 desktop/tablet avatar visual inspection is recorded in `openspec/changes/phase-0002-auth-onboarding/checkpoint-4b-evidence.md`.
 
-Task `13.1` has not started and still requires explicit owner authorization.
+Task `13.1` RED is complete and reviewed. Task `13.2` GREEN is implemented: `GET /api/home` returns only the authenticated user's minimal initialized Home DTO with private no-store behavior and safe failures, while `app/pages/index.vue` renders a minimal protected Home confirmation plus accessible logout without dashboard tabs, grid, widget rendering, edit mode, provider behavior, or Settings shell.
+
+Validation for `13.2`: focused Home/SSR tests passed, `pnpm lint` passed, `pnpm typecheck` passed, `pnpm build` passed, `git diff --check` passed, and a subsequent full `pnpm test` passed 223 tests. A previous full-suite run hit the historical `tests/integration/pocketbase/onboarding-concurrency.test.ts` conflicting-submit flake; diagnosis did not reproduce it, found no demonstrated root cause, and found no evidence that `13.2` caused it. The flake remains an observation, not a resolved defect.
 
 ## Next action
 
-Await the mandated Checkpoint 4B native review before starting `13.1`. Do not start Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
+Await native review closure for `13.2` before any further task. Do not start `14.1`, Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
