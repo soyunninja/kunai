@@ -103,6 +103,10 @@ Task `13.1` RED is complete and reviewed. Task `13.2` GREEN is implemented: `GET
 
 Validation for `13.2`: focused Home/SSR tests passed, `pnpm lint` passed, `pnpm typecheck` passed, `pnpm build` passed, `git diff --check` passed, and a subsequent full `pnpm test` passed 223 tests. A previous full-suite run hit the historical `tests/integration/pocketbase/onboarding-concurrency.test.ts` conflicting-submit flake; diagnosis did not reproduce it, found no demonstrated root cause, and found no evidence that `13.2` caused it. The flake remains an observation, not a resolved defect.
 
+Task `14.1` TRIANGULATE is implemented as security regression coverage only. New tests cover H3 route security with a disposable PocketBase harness, direct normal-token two-user isolation, Nuxt SSR leakage checks, browser/client static leakage checks, same-origin rejection, cookie shapes, mass-assignment attempts, invalid-session/outage behavior, `/api/home`, cache headers, and onboarding concurrency. The task intentionally demonstrates one defect: `GET /api/auth/session` does not emit `Cache-Control: private, no-store` for valid, invalid, or outage responses. No production fix has been applied.
+
+Validation for `14.1`: targeted security suite passes with the demonstrated session cache-header defect captured as an expected-failing assertion; `tests/integration/pocketbase/onboarding-concurrency.test.ts` passed 33 tests; `pnpm lint`, `pnpm typecheck`, and `git diff --check` passed. Browser/proxy-real HTTPS behavior remains for 15.1 manual validation.
+
 ## Next action
 
-Await native review closure for `13.2` before any further task. Do not start `14.1`, Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
+Await native review closure for `14.1` before any further task. Do not start `14.2`, Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
