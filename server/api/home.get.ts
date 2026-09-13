@@ -25,6 +25,8 @@ const stringField = (record: Record<string, unknown>, field: string): string => 
   typeof record[field] === 'string' ? record[field] : ''
 )
 
+const filterValue = (value: string): string => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+
 const assertValidHomeSeed = (record: Record<string, unknown>, ownerId: string): MinimalHomeDto => {
   const id = stringField(record, 'id')
   const owner = stringField(record, 'owner')
@@ -57,12 +59,8 @@ export default defineEventHandler(async (event) => {
 
     const pb = getRequestPocketBase(event, runtimeConfig, event.context.pocketBaseAuthToken)
     const dashboard = await pb.collection('dashboards').getFirstListItem(
-      'owner = {:owner} && seedKey = {:seedKey}',
-      {
-        requestKey: null,
-        owner: session.id,
-        seedKey: 'home',
-      },
+      `owner = "${filterValue(session.id)}" && seedKey = "home"`,
+      { requestKey: null },
     ) as Record<string, unknown>
 
     return assertValidHomeSeed(dashboard, session.id)

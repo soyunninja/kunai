@@ -41,8 +41,10 @@ vi.mock('../../server/utils/pocketbase-client', () => ({
         throw new Error(`Unexpected collection: ${name}`)
       }
 
-      const readHome = async () => {
+      const readHome = async (filter?: string, options?: Record<string, unknown>) => {
         records.readCalls += 1
+        expect(filter).toBe(`owner = "${sessionState.value?.id ?? ''}" && seedKey = "home"`)
+        expect(options).toEqual({ requestKey: null })
         if (records.loadError) {
           throw records.loadError
         }
