@@ -284,7 +284,7 @@ describe('Phase 0002 H3 security boundaries with disposable PocketBase', () => {
     expect(JSON.stringify(outageBody)).not.toContain(activeCookie.replace('kunai_session=', ''))
   })
 
-  it.fails('marks session success and invalid/outage errors private and no-store until 14.2 fixes the evidenced defect', async () => {
+  it('marks session success and invalid/outage errors private and no-store', async () => {
     const user = await provisionUser('session-cache-control')
     const authenticated = await login(user.email)
     const valid = await fetch(`${baseUrl}/api/auth/session`, { headers: { cookie: cookieHeader(authenticated) } })
