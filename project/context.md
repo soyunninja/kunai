@@ -96,10 +96,12 @@ Task `16.1` ADR 0009 is accepted and reviewed. Task `17.1` operational/setup doc
 
 Task `18.1` final automated validation is complete. Evidence is recorded in `openspec/changes/phase-0002-auth-onboarding/final-automated-validation-evidence.md`. Final commands passed: `pnpm lint`, `pnpm typecheck`, `pnpm test` (26 files, 242 tests), `pnpm build`, `git diff --check`, and the explicit disposable PocketBase integration command (7 files, 69 tests) covering compatibility, schema/owner isolation, auth/onboarding isolation, onboarding seed, onboarding concurrency, batch preflight, and Home route against real PocketBase.
 
+Task `18.2` verification preparation is complete. Evidence is recorded in `openspec/changes/phase-0002-auth-onboarding/verification-evidence.md`. The packet maps 18 approved Phase 0002 requirements to implementation, tests, manual evidence where applicable, review evidence, and status. No critical blockers are known for `/sdd-verify`. HTTPS/reverse-proxy real deployment validation remains explicitly deferred to Hardening/Release and is not claimed as a real PASS.
+
 The historical onboarding concurrency flake was reproduced and diagnosed as a transient seed-read race during concurrent completions. The fix re-reads and validates final persisted state before returning success, uses only bounded recovery for recoverable incomplete seed state, and preserves `seed_conflict` for real corrupt/incompatible seed state. Assertions were not relaxed. Post-fix validation included focal concurrent 10/10 PASS, full concurrency file 34/34 PASS, repeated full concurrency file 6/6 PASS, and no final repetition reproduced the flake.
 
-Phase 0002 remains active. Task `18.2` remains pending. Do not archive Phase 0002, start Phase 0003, commit, push, or open a PR without explicit owner authorization.
+Phase 0002 remains active and unarchived. Task `17.2` remains pending until separately authorized. Do not archive Phase 0002, start Phase 0003, commit, push, or open a PR without explicit owner authorization.
 
 ## Next action
 
-Stop for owner authorization before Task `16.1`. Do not start Phase 0003, commit, push, open a PR, or archive Phase 0002 without explicit approval.
+Stop for owner authorization before Task `17.2`, `/sdd-verify`, archive, Phase 0003, commit, push, or PR. Phase 0002 is active and unarchived.
