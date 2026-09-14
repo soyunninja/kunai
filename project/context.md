@@ -10,13 +10,13 @@ The final product name is intentionally undecided and is not a blocker.
 
 Phase 0001 Foundation is verified and archived.
 
-Phase 0002 Authentication & Onboarding is implementation-complete, automated-validation-complete, available-manual-validation-complete, has its verification packet prepared, and is ready for `/sdd-verify` on `feat/phase-0002-auth-onboarding`.
+Phase 0002 Authentication & Onboarding is formally verified on `feat/phase-0002-auth-onboarding`: implementation complete, automated validation complete, available manual validation complete, verification packet complete, and accepted `/sdd-verify` result `VERIFIED` with 18/18 requirements verified and no critical blockers.
 
-Phase 0002 is **not yet formally verified/accepted** and is **not archived**. Do not archive it, start Phase 0003, commit, push, or open a PR without explicit owner authorization.
+Phase 0002 is **not archived**. Do not archive it, start Phase 0003, commit, push, or open a PR without explicit owner authorization.
 
 ## Active phase
 
-`0002 — Authentication & Onboarding` (ready for verification)
+`0002 — Authentication & Onboarding` (verified, not archived)
 
 Phase brief:
 
@@ -32,7 +32,7 @@ Verification packet:
 
 ## Current goal
 
-Await explicit owner authorization for `/sdd-verify` and any later archive/delivery action.
+Await explicit owner authorization for archive, commit, push, PR, or any Phase 0003 work.
 
 Do not start Phase 0003. Phase 0003 remains planned and not started.
 
@@ -82,9 +82,9 @@ Mobile remains supported but is not the primary density/design target.
 - train planning;
 - offline/PWA.
 
-## Current Phase 0002 ready-for-verification status
+## Current Phase 0002 verified status
 
-Phase 0002 implementation is complete for the approved Authentication & Onboarding scope, but the phase is not yet formally verified/accepted:
+Phase 0002 is formally verified for the approved Authentication & Onboarding scope, but not archived:
 
 - login, logout, and session refresh are implemented through Nuxt server routes;
 - the PocketBase bearer stays in an HttpOnly, SameSite=Lax, host-only application cookie;
@@ -179,9 +179,13 @@ Real known limitations:
 - no public registration is implemented;
 - Phase 0003 dashboard functionality is not implemented yet.
 
+## Formal verification result
+
+Accepted `/sdd-verify` result: `VERIFIED`, 18/18 requirements verified, no critical blockers.
+
 ## Blockers
 
-No critical blockers are known for running `/sdd-verify` on Phase 0002.
+No critical blockers remain for Phase 0002 closure.
 
 ## Phase 0003 status
 
@@ -191,4 +195,4 @@ No Phase 0003 implementation files have been created as part of Phase 0002 verif
 
 ## Next action
 
-Stop for explicit owner authorization before `/sdd-verify`, archive, commit, push, PR, or Phase 0003 work.
+Stop for explicit owner authorization before archive, commit, push, PR, or Phase 0003 work.
