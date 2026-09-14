@@ -10,29 +10,31 @@ The final product name is intentionally undecided and is not a blocker.
 
 Phase 0001 Foundation is verified and archived.
 
-Phase 0002 Authentication & Onboarding is formally verified on `feat/phase-0002-auth-onboarding`: implementation complete, automated validation complete, available manual validation complete, verification packet complete, and accepted `/sdd-verify` result `VERIFIED` with 18/18 requirements verified and no critical blockers.
+Phase 0002 Authentication & Onboarding is formally verified and archived on `feat/phase-0002-auth-onboarding`: implementation complete, automated validation complete, available manual validation complete, verification packet complete, and accepted `/sdd-verify` result `VERIFIED` with 18/18 requirements verified and no critical blockers.
 
-Phase 0002 is **not archived**. Do not archive it, start Phase 0003, commit, push, or open a PR without explicit owner authorization.
+Phase 0002 archive path: `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/`.
+
+Do not start Phase 0003, commit, push, or open a PR without explicit owner authorization.
 
 ## Active phase
 
-`0002 — Authentication & Onboarding` (verified, not archived)
+`0002 — Authentication & Onboarding` (verified and archived)
 
 Phase brief:
 
 `docs/phases/0002-auth-onboarding.md`
 
-OpenSpec change name:
+OpenSpec archived change:
 
-`phase-0002-auth-onboarding`
+`openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/`
 
 Verification packet:
 
-`openspec/changes/phase-0002-auth-onboarding/verification-evidence.md`
+`openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/verification-evidence.md`
 
 ## Current goal
 
-Await explicit owner authorization for archive, commit, push, PR, or any Phase 0003 work.
+Await explicit owner authorization to prepare Phase 0003, commit, push, or open a PR.
 
 Do not start Phase 0003. Phase 0003 remains planned and not started.
 
@@ -82,9 +84,9 @@ Mobile remains supported but is not the primary density/design target.
 - train planning;
 - offline/PWA.
 
-## Current Phase 0002 verified status
+## Current Phase 0002 verified and archived status
 
-Phase 0002 is formally verified for the approved Authentication & Onboarding scope, but not archived:
+Phase 0002 is formally verified and archived for the approved Authentication & Onboarding scope:
 
 - login, logout, and session refresh are implemented through Nuxt server routes;
 - the PocketBase bearer stays in an HttpOnly, SameSite=Lax, host-only application cookie;
@@ -112,13 +114,13 @@ Validated runtime dependencies:
 
 Available evidence:
 
-- `openspec/changes/phase-0002-auth-onboarding/compatibility-evidence.md`
-- `openspec/changes/phase-0002-auth-onboarding/schema-owner-isolation-evidence.md`
-- `openspec/changes/phase-0002-auth-onboarding/auth-session-boundary-evidence.md`
-- `openspec/changes/phase-0002-auth-onboarding/checkpoint-4b-evidence.md`
-- `openspec/changes/phase-0002-auth-onboarding/manual-browser-validation-evidence.md`
-- `openspec/changes/phase-0002-auth-onboarding/final-automated-validation-evidence.md`
-- `openspec/changes/phase-0002-auth-onboarding/verification-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/compatibility-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/schema-owner-isolation-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/auth-session-boundary-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/checkpoint-4b-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/manual-browser-validation-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/final-automated-validation-evidence.md`
+- `openspec/changes/archive/2026-09-14-phase-0002-auth-onboarding/verification-evidence.md`
 - `docs/decisions/0009-nuxt-pocketbase-session-boundary.md`
 
 Final automated validation is complete:
@@ -191,8 +193,8 @@ No critical blockers remain for Phase 0002 closure.
 
 Phase 0003 — Dashboard tabs, lifecycle, navigation, settings shell — remains planned and not started.
 
-No Phase 0003 implementation files have been created as part of Phase 0002 verification preparation.
+No Phase 0003 OpenSpec change or implementation files have been created.
 
 ## Next action
 
-Stop for explicit owner authorization before archive, commit, push, PR, or Phase 0003 work.
+Next permitted action, with explicit owner authorization, is preparing Phase 0003. Stop before commit, push, PR, or Phase 0003 work unless authorized.

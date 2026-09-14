@@ -9,7 +9,7 @@ Phase 0001 provides the verified foundation but no application authentication, o
 ## Basis and status
 
 - Change: `phase-0002-auth-onboarding`.
-- Inputs: [completed exploration](./explore.md), [phase brief](../../../docs/phases/0002-auth-onboarding.md), and the project standards, accepted decisions, phase map, product vision/MVP, and architecture overview.
+- Inputs: [completed exploration](./explore.md), [phase brief](../../../../docs/phases/0002-auth-onboarding.md), and the project standards, accepted decisions, phase map, product vision/MVP, and architecture overview.
 - The owner has now approved the proposal direction for the auth/session architecture and account-provisioning approach. No earlier confirmation is assumed, and no inferred scope expansion is required.
 - This artifact is planning only. Implementation, specification, design, tasks, verification, and archive are not performed or authorized by this proposal-only execution.
 

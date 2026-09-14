@@ -5,7 +5,7 @@ Only one major phase should normally be active at a time.
 | Phase | Change name | Goal | Status |
 |---|---|---|---|
 | 0001 | `phase-0001-foundation` | Nuxt/PocketBase/tooling/theme foundation | Done |
-| 0002 | `phase-0002-auth-onboarding` | User auth, isolation, onboarding, default Home seed | Verified |
+| 0002 | `phase-0002-auth-onboarding` | User auth, isolation, onboarding, default Home seed | Done |
 | 0003 | `phase-0003-dashboard-tabs` | Dashboard tabs, lifecycle, navigation, settings shell | Planned |
 | 0004 | `phase-0004-widget-grid-engine` | Grid, widget registry, layouts, edit mode | Planned |
 | 0005 | `phase-0005-home-widgets` | Search, Clock, Weather, Bookmarks, Scratchpad | Planned |

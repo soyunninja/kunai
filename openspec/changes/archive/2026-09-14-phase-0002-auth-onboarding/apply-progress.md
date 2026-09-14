@@ -1,6 +1,6 @@
 # Apply progress — Phase 0002 Authentication & Onboarding
 
-> Historical evidence snapshot: this document records the state known at the close of task `12.3`. It may be outdated by later Phase 0002 corrections, reviews, and reconciliation. Use [`tasks.md`](./tasks.md) together with [`project/context.md`](../../../project/context.md) as the authoritative source for current Phase 0002 status.
+> Historical evidence snapshot: this document records the state known at the close of task `12.3`. It may be outdated by later Phase 0002 corrections, reviews, and reconciliation. Use [`tasks.md`](./tasks.md) together with [`project/context.md`](../../../../project/context.md) as the authoritative source for current Phase 0002 status.
 
 ## 12.3 REFACTOR — recoverable completion responses and retry/resume
 
@@ -42,7 +42,7 @@ None. The task did not change the 12.2 finalization atomicity or the PocketBase 
 
 ### Current status reference
 
-This snapshot does not enumerate current remaining implementation tasks. See [`tasks.md`](./tasks.md) as the OpenSpec task source of record, together with [`project/context.md`](../../../project/context.md) for the current project-state boundary.
+This snapshot does not enumerate current remaining implementation tasks. See [`tasks.md`](./tasks.md) as the OpenSpec task source of record, together with [`project/context.md`](../../../../project/context.md) for the current project-state boundary.
 
 ### Workload / PR boundary
 
@@ -52,4 +52,4 @@ This was a single bounded Checkpoint 4A task slice for the `12.3` candidate at t
 
 - Change: `phase-0002-auth-onboarding`; authoritative OpenSpec status: `applyState: ready`.
 - Action context: `repo-local`; allowed edit root: `/home/baldboy/desarrollo/soyunninja/kunai.pro`; warnings: none.
-- Status after this artifact update: task `12.3` is complete for this historical snapshot; current remaining implementation work is tracked in [`tasks.md`](./tasks.md) and [`project/context.md`](../../../project/context.md).
+- Status after this artifact update: task `12.3` is complete for this historical snapshot; current remaining implementation work is tracked in [`tasks.md`](./tasks.md) and [`project/context.md`](../../../../project/context.md).
