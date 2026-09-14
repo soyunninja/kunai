@@ -314,4 +314,4 @@ Deferred deployment check:
 
 Task 18.2 is ready to be marked complete when this packet is saved, linked from `tasks.md`, and reviewed.
 
-Phase 0002 remains active and unarchived. Task 17.2 remains pending until explicitly authorized after this task. Phase 0003 remains not started.
+Phase 0002 remains active and unarchived. Task 17.2 remains pending until Phase 0002 is formally verified/accepted. Phase 0003 remains not started.
