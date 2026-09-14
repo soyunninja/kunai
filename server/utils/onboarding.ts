@@ -427,6 +427,49 @@ const completedSessionFromProfile = (profile: RecordModel): SafeSessionDto & { r
   }
 }
 
+const completedOnboardingFromPersistedState = async (
+  input: CompleteOnboardingInput,
+  knownProfile?: RecordModel,
+): Promise<CompleteOnboardingResult | null> => {
+  const profile = knownProfile ?? await loadOwnerProfile(input)
+  if (profile.onboardingCompleted !== true) return null
+
+  const preferences = await findFirstOrNull<RecordModel>(
+    input.pb.collection('user_preferences'),
+    `owner = "${filterValue(input.ownerId)}"`,
+  )
+  if (!preferences) throw seedConflict()
+
+  let defaultLocation: DefaultLocation
+  try {
+    defaultLocation = parseDefaultLocation(preferences.defaultLocation)
+  } catch {
+    throw seedConflict()
+  }
+
+  const finalState = await loadExistingSeedState({
+    ...input,
+    timezone: optionalString(profile.timezone, 100),
+    defaultLocation,
+  })
+  if (!finalState.preferences || !finalState.home || finalState.widgetsBySeedKey.size !== requiredWidgetSeedKeys.length) {
+    throw seedConflict()
+  }
+
+  return { status: 'already-complete', session: completedSessionFromProfile(profile) }
+}
+
+const hasRecoverableIncompleteSeedState = async (input: CompleteOnboardingInput): Promise<boolean> => {
+  const profile = await loadOwnerProfile(input)
+  if (profile.onboardingCompleted === true) return false
+
+  await loadExistingSeedState({
+    ...input,
+    allowIncompletePlaceholderConfig: true,
+  })
+  return true
+}
+
 const injectFailureAt = (injection: FailureInjection | undefined, stage: DurableStage): void => {
   if (injection?.failAfterDurableStage === stage) throw completionFailure()
 }
@@ -492,9 +535,8 @@ export const completeOnboarding = async (input: CompleteOnboardingInput): Promis
   for (let attempt = 0; attempt < maximumCompletionAttempts; attempt += 1) {
     try {
       const profile = await loadOwnerProfile(input)
-      if (profile.onboardingCompleted === true) {
-        return { status: 'already-complete', session: completedSessionFromProfile(profile) }
-      }
+      const completedFromPersistedState = await completedOnboardingFromPersistedState(input, profile)
+      if (completedFromPersistedState) return completedFromPersistedState
 
       await persistIncompleteProfile(input)
       injectFailureAt(input.failureInjection, 'profile-draft')
@@ -525,7 +567,19 @@ export const completeOnboarding = async (input: CompleteOnboardingInput): Promis
       if (error instanceof OnboardingCompletionError && error.code === 'response_lost') throw error
       if (error instanceof ApiError && error.code === 'unauthenticated') throw error
 
-      if (error instanceof OnboardingCompletionError && ['seed_conflict', 'onboarding_completion_failed'].includes(error.code)) {
+      if (error instanceof OnboardingCompletionError && error.code === 'seed_conflict') {
+        const completedFromPersistedState = await completedOnboardingFromPersistedState(input)
+        if (completedFromPersistedState) return completedFromPersistedState
+
+        if (attempt + 1 < maximumCompletionAttempts && await hasRecoverableIncompleteSeedState(input)) {
+          await pauseForRetry(attempt)
+          continue
+        }
+
+        throw error
+      }
+
+      if (error instanceof OnboardingCompletionError && error.code === 'onboarding_completion_failed') {
         const profile = await loadOwnerProfile(input)
         if (profile.onboardingCompleted === true) {
           return { status: 'already-complete', session: completedSessionFromProfile(profile) }
@@ -538,10 +592,8 @@ export const completeOnboarding = async (input: CompleteOnboardingInput): Promis
         : isRecoverablePocketBaseError(error)
 
       if (retryable) {
-        const profile = await loadOwnerProfile(input)
-        if (profile.onboardingCompleted === true) {
-          return { status: 'already-complete', session: completedSessionFromProfile(profile) }
-        }
+        const completedFromPersistedState = await completedOnboardingFromPersistedState(input)
+        if (completedFromPersistedState) return completedFromPersistedState
 
         if (attempt + 1 >= maximumCompletionAttempts) {
           throw retryExhausted()

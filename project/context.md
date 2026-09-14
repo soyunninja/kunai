@@ -80,34 +80,25 @@ Mobile remains supported but is not the primary density/design target.
 
 ## Current Phase 0002 status
 
-Completed checkpoints:
-
-1. PocketBase compatibility.
-2. Schema + owner isolation.
-
-Checkpoint 3 status:
-
-Completed, reviewed, and acknowledged. Completed within Checkpoint 3:
-
-- `5.3` — server-side session refresh races and request isolation.
-- `7.1` — SSR and client-navigation RED state-machine tests.
-- `7.2` — SSR session initialization, global middleware, and client session composable.
-
-Current Phase 0002 status:
+Completed checkpoints and task blocks through Task `18.1` are implemented, validated, reviewed where required, and acknowledged where review has completed.
 
 Checkpoint 4A — Onboarding persistence + atomic Home seed is implemented, reviewed, acknowledged, committed, and pushed by the owner.
 
-Checkpoint 4B Task `10.2` onboarding UI is implemented with passing focused and full automated validation. It renders the real onboarding form, uses the owner-approved `avatar-01` through `avatar-10` assets, preserves the no-upload boundary, detects/corrects timezone without UTC fallback, requests geolocation only by explicit action, supports optional non-geocoded location labels, submits only the 4A DTO, and consumes the final `SafeSessionDto`. The deferred 9.2 desktop/tablet avatar visual inspection is recorded in `openspec/changes/phase-0002-auth-onboarding/checkpoint-4b-evidence.md`.
+Checkpoint 4B onboarding UI is implemented with passing focused and full automated validation. It renders the real onboarding form, uses the owner-approved `avatar-01` through `avatar-10` assets, preserves the no-upload boundary, detects/corrects timezone without UTC fallback, requests geolocation only by explicit action, supports optional non-geocoded location labels, submits only the 4A DTO, and consumes the final `SafeSessionDto`. The deferred 9.2 desktop/tablet avatar visual inspection is recorded in `openspec/changes/phase-0002-auth-onboarding/checkpoint-4b-evidence.md`.
 
-Task `13.1` RED is complete and reviewed. Task `13.2` GREEN is implemented: `GET /api/home` returns only the authenticated user's minimal initialized Home DTO with private no-store behavior and safe failures, while `app/pages/index.vue` renders a minimal protected Home confirmation plus accessible logout without dashboard tabs, grid, widget rendering, edit mode, provider behavior, or Settings shell.
+Task `13.2` GREEN is implemented: `GET /api/home` returns only the authenticated user's minimal initialized Home DTO with private no-store behavior and safe failures, while `app/pages/index.vue` renders a minimal protected Home confirmation plus accessible logout without dashboard tabs, grid, widget rendering, edit mode, provider behavior, or Settings shell.
 
-Validation for `13.2`: focused Home/SSR tests passed, `pnpm lint` passed, `pnpm typecheck` passed, `pnpm build` passed, `git diff --check` passed, and a subsequent full `pnpm test` passed 223 tests. A previous full-suite run hit the historical `tests/integration/pocketbase/onboarding-concurrency.test.ts` conflicting-submit flake; diagnosis did not reproduce it, found no demonstrated root cause, and found no evidence that `13.2` caused it. The flake remains an observation, not a resolved defect.
+Task `14.2` corrected the session cache-header defect demonstrated by 14.1: `GET /api/auth/session` now emits `Cache-Control: private, no-store` for valid, invalid/expired, and PocketBase-outage responses.
 
-Task `14.1` TRIANGULATE is implemented as security regression coverage only. New tests cover H3 route security with a disposable PocketBase harness, direct normal-token two-user isolation, Nuxt SSR leakage checks, browser/client static leakage checks, same-origin rejection, cookie shapes, mass-assignment attempts, invalid-session/outage behavior, `/api/home`, cache headers, and onboarding concurrency. It demonstrated one defect: `GET /api/auth/session` did not emit `Cache-Control: private, no-store` for valid, invalid, or outage responses.
+Task `15.1` manual browser validation is complete for the environment available during Phase 0002. Evidence is recorded in `openspec/changes/phase-0002-auth-onboarding/manual-browser-validation-evidence.md`. HTTPS/reverse-proxy validation was not available and remains explicitly pending for Hardening/Release.
 
-Task `14.2` REFACTOR corrected that evidenced defect only: the session route now sets `Cache-Control: private, no-store` before resolution, consistently covering valid, invalid/expired, and PocketBase-outage responses. The 14.1 expected-failing assertion is now a normal passing assertion. The auth model, cookie strategy, PocketBase rules, and other production behavior are unchanged. Affected security/auth/session/home/onboarding suites passed 100 tests; full `pnpm test` passed 239 tests; `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `git diff --check` passed.
+Task `16.1` ADR 0009 is accepted and reviewed. Task `17.1` operational/setup documentation is updated and reviewed. Task `17.2` remains pending because its dependency requires all Phase 0002 validation to be accepted and SDD verification preparation to be complete.
 
-Task `15.1` manual browser validation is complete for the environment available during Phase 0002. Evidence is recorded in `openspec/changes/phase-0002-auth-onboarding/manual-browser-validation-evidence.md`. The available matrix found and then fixed a blocker: after real login and onboarding completion, protected Home displayed the authenticated user but `/api/home` returned `503 home_unavailable` because PocketBase 0.40.3 rejected the placeholder filter used by the Home route. The route now uses the escaped literal owner filter, and revalidation of `login -> onboarding -> GET /api/home` returned 200 with `initialized: true`. Remaining locally executable checks for geolocation denied, invalid/expired cookie cleanup, stale-tab behavior, and two isolated user contexts passed. HTTPS/reverse-proxy validation was not available and remains explicitly pending for Hardening/Release.
+Task `18.1` final automated validation is complete. Evidence is recorded in `openspec/changes/phase-0002-auth-onboarding/final-automated-validation-evidence.md`. Final commands passed: `pnpm lint`, `pnpm typecheck`, `pnpm test` (26 files, 242 tests), `pnpm build`, `git diff --check`, and the explicit disposable PocketBase integration command (7 files, 69 tests) covering compatibility, schema/owner isolation, auth/onboarding isolation, onboarding seed, onboarding concurrency, batch preflight, and Home route against real PocketBase.
+
+The historical onboarding concurrency flake was reproduced and diagnosed as a transient seed-read race during concurrent completions. The fix re-reads and validates final persisted state before returning success, uses only bounded recovery for recoverable incomplete seed state, and preserves `seed_conflict` for real corrupt/incompatible seed state. Assertions were not relaxed. Post-fix validation included focal concurrent 10/10 PASS, full concurrency file 34/34 PASS, repeated full concurrency file 6/6 PASS, and no final repetition reproduced the flake.
+
+Phase 0002 remains active. Task `18.2` remains pending. Do not archive Phase 0002, start Phase 0003, commit, push, or open a PR without explicit owner authorization.
 
 ## Next action
 

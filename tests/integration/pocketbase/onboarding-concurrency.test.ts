@@ -156,6 +156,54 @@ const runCompletion = async (
   })
 }
 
+const safeErrorField = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value
+  if (/password|token|secret|bearer|cookie/i.test(value)) return '<redacted-sensitive-string>'
+  return value
+}
+
+const objectField = (value: unknown, key: string): unknown => (
+  typeof value === 'object' && value !== null && key in value
+    ? (value as Record<string, unknown>)[key]
+    : undefined
+)
+
+const diagnosticOutcome = (outcome: PromiseSettledResult<CompleteOnboardingOutcome>) => {
+  if (outcome.status === 'fulfilled') {
+    return {
+      status: 'fulfilled',
+      valueStatus: outcome.value.status,
+      session: {
+        id: outcome.value.session.id,
+        displayName: outcome.value.session.displayName,
+        avatarKey: outcome.value.session.avatarKey,
+        onboardingCompleted: outcome.value.session.onboardingCompleted,
+      },
+    }
+  }
+
+  const reason = outcome.reason as unknown
+  const response = objectField(reason, 'response')
+  return {
+    status: 'rejected',
+    errorType: reason instanceof Error ? reason.constructor.name : typeof reason,
+    message: safeErrorField(reason instanceof Error ? reason.message : String(reason)),
+    stack: safeErrorField(reason instanceof Error ? reason.stack?.split('\n').slice(0, 8).join('\n') : undefined),
+    name: safeErrorField(objectField(reason, 'name')),
+    code: safeErrorField(objectField(reason, 'code')),
+    statusCode: safeErrorField(objectField(reason, 'statusCode')),
+    httpStatus: safeErrorField(objectField(reason, 'status')),
+    pocketBaseResponse: typeof response === 'object' && response !== null
+      ? {
+          code: safeErrorField(objectField(response, 'code')),
+          message: safeErrorField(objectField(response, 'message')),
+          status: safeErrorField(objectField(response, 'status')),
+          dataKeys: Object.keys(response as Record<string, unknown>).filter((key) => !/password|token|secret|bearer|cookie/i.test(key)),
+        }
+      : undefined,
+  }
+}
+
 describe('Phase 0002 onboarding completion failure injection and concurrency', () => {
   let harness: PocketBaseHarness
   let admin: PocketBase
@@ -456,11 +504,41 @@ describe('Phase 0002 onboarding completion failure injection and concurrency', (
       completeOnboarding({ pb: client.pb, ownerId: client.user.id, ...validPayload, displayName: 'Conflicting User', defaultLocation: otherLocation }),
     ])
     const snapshot = await snapshotFor(client.pb, client.user.id)
+    const fulfilledOutcomes = outcomes.filter((outcome) => outcome.status === 'fulfilled')
 
-    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(2)
+    if (fulfilledOutcomes.length !== 2) {
+      console.error('onboarding-concurrent-conflicting diagnostic', JSON.stringify({
+        outcomes: outcomes.map(diagnosticOutcome),
+        snapshot: {
+          user: {
+            id: snapshot.user.id,
+            displayName: snapshot.user.displayName,
+            avatarKey: snapshot.user.avatarKey,
+            timezone: snapshot.user.timezone,
+            onboardingCompleted: snapshot.user.onboardingCompleted,
+            onboardingCompletedAtPresent: Boolean(snapshot.user.onboardingCompletedAt),
+          },
+          preferences: snapshot.preferences.map((record) => ({ id: record.id, defaultLocation: record.defaultLocation })),
+          dashboards: snapshot.dashboards.map((record) => ({ id: record.id, owner: record.owner, seedKey: record.seedKey })),
+          widgets: snapshot.widgets.map((record) => ({ id: record.id, owner: record.owner, dashboard: record.dashboard, type: record.type, seedKey: record.seedKey, config: record.config })),
+        },
+      }, null, 2))
+    }
+
+    expect(fulfilledOutcomes).toHaveLength(2)
     expect(snapshot.user.onboardingCompleted).toBe(true)
     expect(['Completed User', 'Conflicting User']).toContain(snapshot.user.displayName)
+    expect(snapshot.preferences).toHaveLength(1)
+    expect(snapshot.dashboards.filter((dashboard) => dashboard.seedKey === 'home')).toHaveLength(1)
     expect(snapshot.widgets).toHaveLength(4)
+
+    const fulfilledSessions = outcomes.flatMap((outcome) => outcome.status === 'fulfilled' ? [outcome.value.session] : [])
+    expect(fulfilledSessions.map((session) => session.displayName)).toEqual([snapshot.user.displayName, snapshot.user.displayName])
+
+    const expectedLocation = snapshot.user.displayName === 'Conflicting User' ? otherLocation : null
+    const weather = snapshot.widgets.find((widget) => widget.seedKey === 'weather')
+    expect(snapshot.preferences[0]?.defaultLocation).toEqual(expectedLocation)
+    expect(weather?.config).toEqual({ location: expectedLocation })
   })
 
   it('rejects direct premature onboardingCompleted mutation through normal user credentials', async () => {
@@ -574,6 +652,24 @@ describe('Phase 0002 onboarding completion failure injection and concurrency', (
     )
     const after = await expectNotCompleted(client.pb, client.user.id)
     expect(after.user.displayName).toBe(before.user.displayName)
+  })
+
+  it('preserves seed_conflict instead of treating an already completed corrupt seed as success', async () => {
+    const client = await createUserClient(admin, harness.baseUrl, 'completed-corrupt-seed')
+    await runCompletion(client)
+    const completed = await snapshotFor(client.pb, client.user.id)
+    const search = completed.widgets.find((widget) => widget.seedKey === 'search')
+    expect(search).toBeDefined()
+    await admin.collection('dashboard_widgets').update(search!.id, { config: { engine: 'corrupt' } }, { requestKey: null })
+
+    await expect(runCompletion(client)).rejects.toMatchObject({
+      code: 'seed_conflict',
+      retryable: false,
+      statusCode: 409,
+    })
+    const after = await snapshotFor(client.pb, client.user.id)
+    expect(after.user.onboardingCompleted).toBe(true)
+    expect(after.widgets).toHaveLength(4)
   })
 
   it('rejects direct completion when a required seed relation belongs to another owner', async () => {
