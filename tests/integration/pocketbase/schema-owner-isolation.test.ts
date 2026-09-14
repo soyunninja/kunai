@@ -195,7 +195,7 @@ describe('Phase 0002 PocketBase schema and owner isolation', () => {
     expect(reloaded.owner).toBe(a.user.id)
   })
 
-  it('enforces owner isolation for dashboards list/view/create/update/delete', async () => {
+  it('enforces owner isolation for dashboards list/view/create/update and rejects hard delete', async () => {
     const { a, b } = await createClientPair(admin, harness.baseUrl, 'dashboards-crud')
     const dashboardA = await createDashboard(a.pb, a.user)
     const dashboardB = await createDashboard(b.pb, b.user)
@@ -213,8 +213,8 @@ describe('Phase 0002 PocketBase schema and owner isolation', () => {
     await expectClientError(a.pb.collection('dashboards').update(dashboardB.id, { name: 'Stolen' }), [403, 404])
     await expectClientError(a.pb.collection('dashboards').delete(dashboardB.id), [403, 404])
 
-    await a.pb.collection('dashboards').delete(dashboardA.id)
-    await expectClientError(a.pb.collection('dashboards').getOne(dashboardA.id), [403, 404])
+    await expectClientError(a.pb.collection('dashboards').delete(dashboardA.id), [400, 403])
+    await expect(a.pb.collection('dashboards').getOne(dashboardA.id)).resolves.toMatchObject({ id: dashboardA.id, owner: a.user.id })
   })
 
   it('enforces owner isolation for dashboard widgets list/view/create/update/delete', async () => {

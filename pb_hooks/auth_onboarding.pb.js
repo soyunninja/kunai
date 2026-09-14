@@ -1,5 +1,5 @@
 /// <reference path="../pb_data/types.d.ts" />
-/* global __hooks, onBootstrap, onRecordUpdateRequest */
+/* global __hooks, onBootstrap, onRecordCreateRequest, onRecordDeleteRequest, onRecordUpdateRequest */
 
 onBootstrap((e) => {
   e.next()
@@ -37,3 +37,40 @@ onRecordUpdateRequest((e) => {
   e.record.set('onboardingCompletedAt', new Date().toISOString())
   e.next()
 }, 'users')
+
+onRecordUpdateRequest((e) => {
+  const info = e.requestInfo()
+  if (!info.auth || info.auth.isSuperuser()) {
+    e.next()
+    return
+  }
+
+  const { assertDashboardUpdate } = require(__hooks + '/lib/dashboard-lifecycle.js')
+  assertDashboardUpdate(e.app, e.record)
+  e.next()
+}, 'dashboards')
+
+onRecordDeleteRequest((e) => {
+  const info = e.requestInfo()
+  if (!info.auth || info.auth.isSuperuser()) {
+    e.next()
+    return
+  }
+
+  throw new Error('Dashboards cannot be hard-deleted.')
+}, 'dashboards')
+
+const assertUserPreferencesActiveDashboardRequest = (e) => {
+  const info = e.requestInfo()
+  if (!info.auth || info.auth.isSuperuser()) {
+    e.next()
+    return
+  }
+
+  const { assertActiveDashboardReference } = require(__hooks + '/lib/dashboard-lifecycle.js')
+  assertActiveDashboardReference(e.app, e.record)
+  e.next()
+}
+
+onRecordCreateRequest(assertUserPreferencesActiveDashboardRequest, 'user_preferences')
+onRecordUpdateRequest(assertUserPreferencesActiveDashboardRequest, 'user_preferences')

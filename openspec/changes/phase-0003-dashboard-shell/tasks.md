@@ -1,0 +1,106 @@
+# Tasks — Phase 0003 Dashboard Tabs & Shell
+
+## Planning status
+
+This task plan records the approved Phase 0003 scope and checkpoint delivery strategy. Checkpoint 1 is authorized only through the completed 1.1 RED and 1.2 GREEN work below; later checkpoints remain unauthorized until the owner explicitly approves them.
+
+## Review Workload Forecast
+
+| Field | Value |
+|---|---|
+| Estimated changed lines | 1,600–2,400 |
+| 400-line budget risk | High |
+| Chained PRs recommended by forecast | Avoid one monolithic change; use checkpoint-sized implementation/review slices |
+| Delivery decision | Approved: implement by small checkpoints; each relevant checkpoint receives independent review; no global review authorization for the whole session |
+| Implementation branch | `feat/phase-0003-dashboard-shell` |
+| Change directory | `openspec/changes/phase-0003-dashboard-shell/` |
+| Decision needed before apply | No for Home policy/delivery strategy; apply still requires explicit owner authorization |
+
+## Critical order
+
+1. Preserve the approved Phase 0003 Home policy and validate the active-dashboard persistence shape.
+2. Prove schema/rule/hook contracts with RED integration tests before migration changes.
+3. Implement server dashboard contracts before UI depends on them.
+4. Implement SSR shell and client interactions without widget/grid behavior.
+5. Harden security, accessibility, responsive behavior, and documentation before verify.
+
+## Checkpoints
+
+| Checkpoint | Purpose | Review gate |
+|---|---|---|
+| 0 — Policy record | Record approved Home policy, canonical name, and checkpoint delivery strategy | Complete in planning; apply still requires explicit authorization |
+| 1 — Persistence and direct isolation | Migration, rules/hooks, direct normal-user invariants | Native review before server/UI work |
+| 2 — Server dashboard API | DTOs, list/active/create/rename/reorder/archive routes | Native review before UI shell |
+| 3 — SSR shell and tab UI | Protected dashboard shell, tabs, placeholders, routing | Native review before lifecycle polish |
+| 4 — Lifecycle UX, accessibility, security | Forms, reorder controls, archive UX, final hardening | Native review before final verification |
+| 5 — Final validation packet | Automated/manual evidence and SDD verify readiness | Native review before `/sdd-verify` |
+
+## 0. Approval gates
+
+- [x] **0.1 Record approved Phase 0003 Home policy.** Objective: record the approved policy: seeded Home is renameable, not archivable/deletable during Phase 0003, this restriction may be reconsidered later, zero non-archived dashboards is impossible, and hard delete is out of scope. **Probable files:** planning artifacts only. **Dependency:** owner approval. **Completion criteria:** Owner-approved policy is recorded before implementation starts. **Tests/validation:** not applicable. **gentle-ai review before continuing:** No. <!-- sdd-owner: planning -->
+
+- [x] **0.2 Record approved delivery/review strategy.** Objective: record that Phase 0003 implementation proceeds by small checkpoints, each relevant checkpoint is reviewed independently, no global review authorization is granted for the whole session, and a monolithic 1,600–2,400 line change is not authorized. **Probable files:** `tasks.md`. **Dependency:** owner approval. **Completion criteria:** Delivery decision is recorded before `sdd-apply`. **Tests/validation:** not applicable. **gentle-ai review before continuing:** No. <!-- sdd-owner: planning -->
+
+## 1. Persistence and PocketBase isolation
+
+- [x] **1.1 RED — Specify dashboard lifecycle migration and direct-rule expectations.** Objective: add failing disposable PocketBase tests for `dashboards.archivedAt`, `user_preferences.activeDashboard`, owner isolation, protected field mutation, Home archive rejection, last-dashboard archive rejection, and active preference ownership validation. **Files:** `tests/integration/pocketbase/dashboard-lifecycle.test.ts`. **Dependency:** 0.1 approved policy. **Completion criteria:** PASS for RED: tests exist, the disposable PocketBase harness works, and the suite fails against current Phase 0002 schema/rules because lifecycle fields and Phase 0003 hooks are absent rather than because of artificial harness failure. **Tests/validation:** RED — `pnpm vitest run tests/integration/pocketbase/dashboard-lifecycle.test.ts --reporter=verbose` failed 7/8 tests for expected reasons: missing `dashboards.archivedAt`, omitted/non-persisted `user_preferences.activeDashboard`, Home archive/delete not rejected, last-dashboard archive not rejected, cross-user activeDashboard not rejected, and archived dashboard still selectable as active. Baseline owner/widget relation protection passed. `pnpm lint`, `pnpm typecheck`, and `git diff --check` passed. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [x] **1.2 GREEN — Add reversible migration and direct lifecycle invariants for dashboard persistence.** Objective: add `archivedAt`, active-dashboard preference storage, and the PocketBase rules/hooks necessary to make the 1.1 RED lifecycle contract pass while preserving existing Home and widget records. **Files:** `pb_migrations/20260915100000_dashboard_lifecycle.js`, `pb_hooks/auth_onboarding.pb.js`, `pb_hooks/lib/dashboard-lifecycle.js`, `tests/integration/pocketbase/dashboard-lifecycle.test.ts`, `tests/integration/pocketbase/schema-owner-isolation.test.ts`. **Dependency:** 1.1 RED. **Completion criteria:** PASS — fresh and existing disposable databases migrate; existing Phase 0002 users/Home records remain valid; Home is reused and not duplicated; seeded widgets remain; dashboard hard delete is rejected; owner isolation remains intact; rollback remains guarded for disposable data. **Tests/validation:** PASS — `pnpm vitest run tests/integration/pocketbase/dashboard-lifecycle.test.ts --reporter=verbose` (8/8); affected PocketBase regression cohort (61/61); `pnpm lint`; `pnpm typecheck`; `pnpm test` (27 files / 250 tests); `pnpm build`; `git diff --check`. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **1.3 RECONCILE — Remove or revise this originally planned separate invariant task before any further Checkpoint 1 work.** Objective: reconcile the task plan because the owner-authorized 1.2 GREEN scope explicitly included the persistence rules and invariants that this earlier draft had listed separately. **Probable files:** `openspec/changes/phase-0003-dashboard-shell/tasks.md`. **Dependency:** 1.2 review. **Completion criteria:** The task plan no longer double-counts hook/rule work already completed in 1.2, and no additional implementation is performed under this line without explicit authorization. **Tests/validation:** planning-only. **gentle-ai review before continuing:** No. <!-- sdd-owner: planning -->
+
+- [ ] **1.4 REFACTOR — Stabilize migration/hook diagnostics.** Objective: ensure invalid lifecycle states produce bounded, sanitized diagnostics without leaking SQL/filter details or deleting valued records. **Probable files:** migration/hook files, integration tests, docs if needed. **Dependency:** 1.3. **Completion criteria:** Operator-facing diagnostics are explicit; destructive rollback remains guarded. **Tests/validation:** targeted diagnostics tests and `git diff --check`. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+## 2. Server dashboard contracts
+
+- [ ] **2.1 RED — Define shared dashboard DTO and validation tests.** Objective: specify dashboard name parsing, minimal DTO projection, active selection resolution, reorder full-set validation, archive policy, and unknown-field rejection before routes exist. **Probable files:** `shared/types/dashboard.ts`, `shared/validation/dashboard.ts`, `tests/unit/dashboard-validation.test.ts`. **Dependency:** 0.1 policy. **Completion criteria:** Unit tests fail before validators/service helpers are implemented. **Tests/validation:** focused RED unit run. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [ ] **2.2 GREEN — Implement dashboard DTO validators and server service.** Objective: add pure helpers and server utility operations for loading non-archived dashboards, projecting shell DTOs, resolving active dashboard, normalizing order, and enforcing archive policy. **Probable files:** `shared/types/dashboard.ts`, `shared/validation/dashboard.ts`, `server/utils/dashboards.ts`, unit tests. **Dependency:** 2.1 RED and Checkpoint 1 persistence. **Completion criteria:** Helpers are typed without `any`, reject invalid inputs, and do not expose raw PocketBase records. **Tests/validation:** unit tests, lint, typecheck. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [ ] **2.3 RED — Add route contract tests for dashboard list and mutations.** Objective: define `GET /api/dashboards`, `POST /api/dashboards/active`, `POST /api/dashboards`, `PATCH /api/dashboards/:id`, `POST /api/dashboards/reorder`, and `POST /api/dashboards/:id/archive` behavior, including auth states, no-store, same-origin, field errors, outage, sanitized responses, and proof that GET has no business-write side effects. **Probable files:** `tests/server/dashboard-routes.test.ts`, route stubs. **Dependency:** 2.2 service helper shape. **Completion criteria:** Tests fail before routes exist. **Tests/validation:** focused server RED run. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [ ] **2.4 GREEN — Implement dashboard list/active/create/rename/reorder/archive routes.** Objective: add thin H3 routes using same-origin protection, `resolveSession`, request-scoped PocketBase client, normal-user identity, DTO projection, side-effect-free GET reads, explicit active selection mutation, and sanitized errors. **Probable files:** `server/api/dashboards/index.get.ts`, `server/api/dashboards/active.post.ts`, `server/api/dashboards/index.post.ts`, `server/api/dashboards/[id].patch.ts`, `server/api/dashboards/reorder.post.ts`, `server/api/dashboards/[id]/archive.post.ts`, `server/utils/dashboards.ts`, route tests. **Dependency:** 2.3 RED. **Completion criteria:** Routes satisfy HTTP contracts and preserve Phase 0002 session/cookie behavior. **Tests/validation:** server route suite, security-focused same-origin cases, lint, typecheck. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **2.5 TRIANGULATE — Prove server concurrency and stale payload behavior.** Objective: cover concurrent create/reorder/archive/active selection conflicts with deterministic outcomes and no zero-dashboard state. **Probable files:** `tests/integration/pocketbase/dashboard-lifecycle.test.ts`, `tests/server/dashboard-routes.test.ts`, `server/utils/dashboards.ts`. **Dependency:** 2.4. **Completion criteria:** Stale reorder conflicts are rejected; archiving active dashboards selects a valid fallback; invalid active ids do not leak cross-user state. **Tests/validation:** focused concurrency/integration runs. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+## 3. SSR shell and tab UI
+
+- [ ] **3.1 RED — Define SSR routing and shell rendering tests.** Objective: specify completed-user shell SSR, anonymous/incomplete redirects, invalid query fallback, no-store headers, hydration parity, and absence of widget grid/functionality. **Probable files:** `tests/ssr/dashboard-shell.nuxt.test.ts`, `tests/home.nuxt.test.ts`, `app/pages/index.vue`. **Dependency:** 2.4 API contracts. **Completion criteria:** Tests fail against the current Phase 0002 minimal Home page. **Tests/validation:** focused SSR/UI RED run. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [ ] **3.2 GREEN — Implement SSR-ready dashboard shell state and composable.** Objective: add client/server-safe dashboard state loading, active selection, stale-response handling, and API actions without client PocketBase SDK or local-storage authority. **Probable files:** `app/composables/useDashboards.ts`, `shared/types/dashboard.ts`, SSR tests. **Dependency:** 3.1 RED and 2.4 routes. **Completion criteria:** SSR and client hydration agree on active dashboard and no protected stale data is shown after auth failure/outage. **Tests/validation:** SSR/composable tests, lint, typecheck. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [ ] **3.3 GREEN — Replace minimal Home with dashboard shell and tabs.** Objective: implement product identity, horizontal tabs, `+`, edit/settings entry points, user/avatar area, logout, appearance control integration, and empty active-dashboard placeholder. **Probable files:** `app/pages/index.vue`, `app/components/DashboardShell.vue`, `app/components/DashboardHeader.vue`, `app/components/DashboardTabs.vue`, `app/components/DashboardEmptyState.vue`, local UI primitives if needed, `tests/home.nuxt.test.ts`. **Dependency:** 3.2. **Completion criteria:** Shell renders real tabs and safe placeholders; no grid, widget rendering, Travel/Dev auto-create, providers, or full settings appear. **Tests/validation:** UI/SSR tests, accessibility assertions, lint, typecheck. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **3.4 REFACTOR — Align auth routing for shell/settings entry points.** Objective: update route decision helpers and middleware so protected shell/settings routes are explicit and private/no-store without weakening login/onboarding behavior. **Probable files:** `app/utils/auth-routing.ts`, `app/middleware/auth.global.ts`, `tests/ssr/auth-routing.nuxt.test.ts`, `tests/ssr/auth-middleware.nuxt.test.ts`. **Dependency:** 3.3. **Completion criteria:** Unknown routes do not accidentally expose protected dashboard data; optional settings placeholder is protected if implemented. **Tests/validation:** auth routing SSR/middleware tests. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+## 4. Lifecycle UX, accessibility, and security hardening
+
+- [ ] **4.1 RED — Define create/rename/reorder/archive interaction tests.** Objective: specify keyboard/touch behavior, field validation, retry/error states, confirmation/disable states, and accessible tab selection/reorder controls. **Probable files:** `tests/dashboard-shell.nuxt.test.ts`, component tests. **Dependency:** 3.3 shell. **Completion criteria:** Tests fail until lifecycle UI is wired. **Tests/validation:** focused RED UI run. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+- [ ] **4.2 GREEN — Wire create, rename, reorder, archive, and active selection UX.** Objective: connect shell controls to dashboard APIs with recoverable loading/error states, accessible controls, touch-safe targets, and deterministic active-dashboard updates. **Probable files:** dashboard components/composable, local primitives, UI tests. **Dependency:** 4.1 RED and 2.4 routes. **Completion criteria:** User can manage allowed dashboards without page reload; invalid operations show safe errors; Home/last-dashboard archive controls are disabled or rejected clearly. **Tests/validation:** UI interaction tests, server route regression, lint, typecheck. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **4.3 TRIANGULATE — Add end-to-end security regression coverage.** Objective: combine token sentinel, no client SDK, CSRF for all dashboard mutations, two-user isolation, cache headers, outage/invalid-session behavior, and direct normal-user PocketBase lifecycle checks. **Probable files:** `tests/server/security.test.ts`, `tests/ssr/security.test.ts`, `tests/integration/pocketbase/dashboard-lifecycle.test.ts`. **Dependency:** 4.2. **Completion criteria:** Every dashboard lifecycle operation has security evidence; no secret/token/private endpoint appears in browser-visible outputs. **Tests/validation:** targeted security suites and `git diff --check`. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **4.4 REFACTOR — Polish responsive visual shell without expanding scope.** Objective: improve desktop/tablet/mobile layout, focus states, non-color active cues, reduced-motion behavior, and terminal-inspired density while keeping widgets/settings/grid out of scope. **Probable files:** dashboard components, CSS, UI tests. **Dependency:** 4.3 security coverage. **Completion criteria:** Visual shell matches approved style and remains accessible; no prohibited future feature appears. **Tests/validation:** UI tests plus manual checklist. **gentle-ai review before continuing:** No. <!-- sdd-owner: implementation -->
+
+## 5. Documentation, validation, and verify preparation
+
+- [ ] **5.1 Update architecture/development docs for Phase 0003 dashboard shell.** Objective: document dashboard lifecycle, active selection, soft archive, Home policy, test commands, and operational migration notes without marking the phase verified. **Probable files:** `docs/architecture/data-model.md`, `docs/architecture/overview.md`, `docs/development/local-setup.md` if needed. **Dependency:** implemented behavior. **Completion criteria:** Docs reflect actual implementation and do not claim Phase 0004 grid/widgets. **Tests/validation:** link/path check and `git diff --check`. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **5.2 Perform manual dashboard shell validation.** Objective: validate desktop/tablet/mobile shell, keyboard tab switching, touch controls, create/rename/reorder/archive UX, logout, invalid-session/outage states, and absence of grid/widgets. **Probable files:** `openspec/changes/phase-0003-dashboard-shell/manual-validation-evidence.md`. **Dependency:** 4.4 and 5.1. **Completion criteria:** Manual evidence records environment, expected/actual results, blockers, and deferred deployment checks if any. **Tests/validation:** manual matrix. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **5.3 Run final automated validation.** Objective: run lint, typecheck, test, build, `git diff --check`, and explicit PocketBase integration suites covering dashboard lifecycle. **Probable files:** `openspec/changes/phase-0003-dashboard-shell/final-automated-validation-evidence.md`. **Dependency:** 5.2 or documented available manual evidence. **Completion criteria:** Required commands pass without silent skips; failures are fixed through earlier tasks rather than waived. **Tests/validation:** `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, explicit PocketBase integration command, `git diff --check`. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+- [ ] **5.4 Prepare Phase 0003 verification packet and stop before archive/Phase 0004.** Objective: map requirements to implementation, tests, manual evidence, review checkpoints, known limitations, and phase boundaries for `/sdd-verify`. **Probable files:** `openspec/changes/phase-0003-dashboard-shell/verification-evidence.md`, `project/context.md`, `project/phase-map.md` only after accepted verification as appropriate. **Dependency:** 5.3 passing evidence. **Completion criteria:** Packet supports every approved requirement and explicitly confirms no Phase 0004 grid/widget work. **Tests/validation:** `/sdd-verify` when separately authorized. **gentle-ai review before continuing:** Yes. <!-- sdd-owner: implementation -->
+
+## Proposed native review checkpoints
+
+- After 1.3: migration/rules/hooks and direct normal-user isolation.
+- After 2.4/2.5: server dashboard API and concurrency semantics.
+- After 3.3: SSR shell and tab UI boundary.
+- After 4.2/4.3: lifecycle UX, accessibility, and security.
+- After 5.3/5.4: final validation and verification packet.
+
+## Explicit stop
+
+Stop here after planning. The next proposed implementation checkpoint is Checkpoint 1 — Persistence and direct isolation — beginning with task 1.1 RED, but it is not authorized yet. Do not run implementation tasks, do not start Phase 0004, do not commit, do not push, and do not open a pull request without explicit owner authorization.
