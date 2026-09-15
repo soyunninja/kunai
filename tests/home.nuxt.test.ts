@@ -6,12 +6,22 @@ import { useState } from '#imports'
 import App from '../app/app.vue'
 import type { SessionValidationState } from '../app/composables/useSession'
 import type { SafeSessionDto } from '../shared/types/auth'
+import type { DashboardShellDto } from '../shared/types/dashboard'
 
 const completedUser: SafeSessionDto = {
   id: 'completed-user',
   displayName: 'Ada Lovelace',
   avatarKey: 'avatar-01',
   onboardingCompleted: true,
+}
+
+const dashboardShell: DashboardShellDto = {
+  dashboards: [
+    { id: 'home-completed-user', name: 'Home', sortOrder: 0, isHome: true },
+    { id: 'work-completed-user', name: 'Work', sortOrder: 1, isHome: false },
+  ],
+  activeDashboardId: 'home-completed-user',
+  activeDashboard: { id: 'home-completed-user', name: 'Home', sortOrder: 0, isHome: true },
 }
 
 const setSessionState = (
@@ -26,7 +36,10 @@ const setSessionState = (
 
 const mountHome = async () => {
   setSessionState(completedUser)
-  vi.stubGlobal('$fetch', vi.fn(async (path: string) => {
+  const fetchMock = vi.fn(async (path: string) => {
+    if (path === '/api/dashboards') {
+      return dashboardShell
+    }
     if (path === '/api/home') {
       return {
         dashboard: {
@@ -37,9 +50,12 @@ const mountHome = async () => {
       }
     }
     throw new Error(`Unexpected request: ${path}`)
-  }))
+  })
 
-  return await mountSuspended(App, { route: '/' })
+  vi.stubGlobal('$fetch', fetchMock)
+  const wrapper = await mountSuspended(App, { route: '/' })
+
+  return { wrapper, fetchMock }
 }
 
 afterEach(() => {
@@ -49,51 +65,65 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-theme')
 })
 
-describe('Phase 0002 minimal protected Home RED contract', () => {
+describe('Phase 0003 dashboard shell Home RED contract', () => {
   beforeEach(() => {
     document.documentElement.dataset.theme = 'dark'
   })
 
-  it('renders only the authenticated user, initialized private Home, main landmark, and accessible logout', async () => {
-    const wrapper = await mountHome()
+  it('replaces the Phase 0002 minimal Home with the protected dashboard shell entry point', async () => {
+    const { wrapper, fetchMock } = await mountHome()
 
-    expect(wrapper.get('main').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="authenticated-user"]').text()).toContain('Ada Lovelace')
-    expect(wrapper.get('[data-testid="home-name"]').text()).toBe('Home')
-    expect(wrapper.get('[data-testid="home-initialized"]').text()).toMatch(/initialized/i)
-
-    const logout = wrapper.get<HTMLButtonElement>('[data-testid="logout"]')
-    expect(logout.element).toBeInstanceOf(HTMLButtonElement)
-    expect(logout.attributes('type')).toBe('button')
-    expect(logout.text()).toMatch(/log out/i)
+    expect(fetchMock).toHaveBeenCalledWith('/api/dashboards')
+    expect(wrapper.get('main').attributes('aria-label')).toBe('Dashboard shell')
+    expect(wrapper.find('[data-testid="dashboard-shell-heading"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="dashboard-shell"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="product-identity"]').text()).toMatch(/kunai/i)
+    expect(wrapper.get('[data-testid="dashboard-header"]').exists()).toBe(true)
+    expect(wrapper.get('[role="tablist"][aria-label="Dashboards"]').exists()).toBe(true)
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toContain('Home')
+    expect(wrapper.get('[data-testid="active-dashboard-empty-state"]').text()).toContain('Home is empty.')
 
     wrapper.unmount()
   })
 
-  it('preserves appearance controls while withholding raw session data and future dashboard product controls', async () => {
-    const wrapper = await mountHome()
-    const pageText = wrapper.text().toLowerCase()
+  it('keeps account, logout, settings entry, dashboard management, and existing appearance control available without exposing raw protected data', async () => {
+    const { wrapper } = await mountHome()
     const appearance = wrapper.get<HTMLSelectElement>('#appearance')
 
     await appearance.setValue('light')
     await nextTick()
 
     expect(document.documentElement.dataset.theme).toBe('light')
+    expect(wrapper.get('[data-testid="user-identity"]').text()).toContain('Ada Lovelace')
+    expect(wrapper.get('[data-testid="logout"]').text()).toMatch(/log out/i)
+    expect(wrapper.get('[data-testid="settings-entry"]').text()).toMatch(/settings/i)
+    expect(wrapper.get('[data-testid="manage-dashboards"]').text()).toMatch(/edit|manage/i)
     expect(wrapper.find('[data-safe-session]').exists()).toBe(false)
     expect(wrapper.find('pre').exists()).toBe(false)
-    for (const futureTerm of [
-      'dashboard tabs',
+    expect(wrapper.html()).not.toMatch(/token|authStore|collectionId|pocketbase/i)
+
+    wrapper.unmount()
+  })
+
+  it('does not render widgets or grid features before later Phase 0003 tasks', async () => {
+    const { wrapper } = await mountHome()
+    const pageText = wrapper.text().toLowerCase()
+
+    for (const deferredTerm of [
       'grid',
       'widget',
       'drag',
-      'edit',
-      'settings',
+      'resize',
+      'search',
+      'clock',
+      'weather',
+      'bookmarks',
       'travel',
       'dev',
       'finance',
       'calendar',
     ]) {
-      expect(pageText).not.toContain(futureTerm)
+      expect(pageText).not.toContain(deferredTerm)
     }
 
     wrapper.unmount()
