@@ -31,13 +31,17 @@ const isDashboardShellDto = (value: unknown): value is DashboardShellDto => {
     && isDashboardTabDto(candidate.activeDashboard)
 }
 
-const dashboardErrorMessage = (error: unknown): string => {
-  const statusCode = typeof error === 'object'
-    && error !== null
-    && 'statusCode' in error
-    && typeof error.statusCode === 'number'
+const dashboardStatusCode = (error: unknown): number => (
+  typeof error === 'object'
+  && error !== null
+  && 'statusCode' in error
+  && typeof error.statusCode === 'number'
     ? error.statusCode
     : 0
+)
+
+const dashboardLoadErrorMessage = (error: unknown): string => {
+  const statusCode = dashboardStatusCode(error)
 
   if (statusCode === 401) {
     return 'Dashboard session could not be validated.'
@@ -52,6 +56,24 @@ const dashboardErrorMessage = (error: unknown): string => {
   }
 
   return 'Dashboards could not be loaded.'
+}
+
+const dashboardMutationErrorMessage = (error: unknown): string => {
+  const statusCode = dashboardStatusCode(error)
+
+  if (statusCode === 401) {
+    return 'Dashboard session could not be validated.'
+  }
+
+  if (statusCode === 409) {
+    return 'Dashboard changes conflict. Retry.'
+  }
+
+  if (statusCode === 503) {
+    return 'Dashboards are temporarily unavailable. Retry.'
+  }
+
+  return 'Dashboards could not be updated. Retry.'
 }
 
 const dashboardPath = (requestedDashboardId: string | null) => (
@@ -93,6 +115,10 @@ export const useDashboards = () => {
     errorMessage.value = ''
   }
 
+  const clearError = () => {
+    errorMessage.value = ''
+  }
+
   watch([session, validationState], ([currentSession, currentValidationState]) => {
     if (!currentSession?.onboardingCompleted || currentValidationState === 'unavailable') {
       clear()
@@ -111,7 +137,7 @@ export const useDashboards = () => {
       || session.value.id !== requestSessionId
       || validationState.value === 'unavailable'
     ) {
-      return shell.value
+      return null
     }
 
     ownerSessionId.value = requestSessionId
@@ -123,19 +149,36 @@ export const useDashboards = () => {
 
   const handleFailure = (epoch: number, error: unknown) => {
     if (!acceptResponse(epoch)) {
-      return shell.value
+      return null
     }
 
     shell.value = null
     loadState.value = 'unavailable'
-    errorMessage.value = dashboardErrorMessage(error)
-    return shell.value
+    errorMessage.value = dashboardLoadErrorMessage(error)
+    return null
+  }
+
+  const handleMutationFailure = (epoch: number, failure: unknown) => {
+    if (!acceptResponse(epoch)) {
+      return null
+    }
+
+    const statusCode = dashboardStatusCode(failure)
+
+    if (statusCode === 401) {
+      clear()
+      return null
+    }
+
+    loadState.value = shell.value ? 'ready' : 'unavailable'
+    errorMessage.value = dashboardMutationErrorMessage(failure)
+    return null
   }
 
   const load = async (requestedDashboardId?: string | null) => {
     if (!session.value?.onboardingCompleted || validationState.value === 'unavailable') {
       clear()
-      return shell.value
+      return null
     }
 
     const requestSessionId = session.value.id
@@ -150,8 +193,29 @@ export const useDashboards = () => {
       }
 
       return applyShell(epoch, requestSessionId, response)
-    } catch (error) {
-      return handleFailure(epoch, error)
+    } catch (failure) {
+      return handleFailure(epoch, failure)
+    }
+  }
+
+  const mutate = async (path: string, options: { readonly method: 'POST' | 'PATCH', readonly body: object }) => {
+    if (!session.value?.onboardingCompleted || validationState.value === 'unavailable') {
+      clear()
+      return null
+    }
+
+    const requestSessionId = session.value.id
+    const epoch = beginRequest()
+
+    try {
+      const response = await $fetch<unknown>(path, options)
+      if (!isDashboardShellDto(response)) {
+        throw new Error('Invalid dashboard shell payload')
+      }
+
+      return applyShell(epoch, requestSessionId, response)
+    } catch (failure) {
+      return handleMutationFailure(epoch, failure)
     }
   }
 
@@ -160,31 +224,34 @@ export const useDashboards = () => {
   const setActive = async (dashboardId: string) => {
     if (!dashboards.value.some((dashboard) => dashboard.id === dashboardId)) {
       errorMessage.value = 'Dashboard selection is not available.'
-      return shell.value
+      return null
     }
 
-    if (!session.value?.onboardingCompleted || validationState.value === 'unavailable') {
-      clear()
-      return shell.value
-    }
-
-    const requestSessionId = session.value.id
-    const epoch = beginRequest()
-
-    try {
-      const response = await $fetch<unknown>('/api/dashboards/active', {
-        method: 'POST',
-        body: { dashboardId },
-      })
-      if (!isDashboardShellDto(response)) {
-        throw new Error('Invalid dashboard shell payload')
-      }
-
-      return applyShell(epoch, requestSessionId, response)
-    } catch (error) {
-      return handleFailure(epoch, error)
-    }
+    return mutate('/api/dashboards/active', {
+      method: 'POST',
+      body: { dashboardId },
+    })
   }
+
+  const createDashboard = async (name: string) => mutate('/api/dashboards', {
+    method: 'POST',
+    body: { name },
+  })
+
+  const renameDashboard = async (dashboardId: string, name: string) => mutate(`/api/dashboards/${encodeURIComponent(dashboardId)}`, {
+    method: 'PATCH',
+    body: { name },
+  })
+
+  const reorderDashboards = async (dashboardIds: readonly string[]) => mutate('/api/dashboards/reorder', {
+    method: 'POST',
+    body: { dashboardIds },
+  })
+
+  const archiveDashboard = async (dashboardId: string) => mutate(`/api/dashboards/${encodeURIComponent(dashboardId)}/archive`, {
+    method: 'POST',
+    body: {},
+  })
 
   return {
     shell: readonly(shell),
@@ -197,6 +264,11 @@ export const useDashboards = () => {
     load,
     refresh,
     setActive,
+    createDashboard,
+    renameDashboard,
+    reorderDashboards,
+    archiveDashboard,
+    clearError,
     clear,
   }
 }

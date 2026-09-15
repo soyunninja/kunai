@@ -7,6 +7,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  create: []
   select: [dashboardId: string]
 }>()
 
@@ -75,7 +76,9 @@ const handleKeydown = (event: KeyboardEvent, dashboard: DashboardTabDto, index: 
       data-touch-target="comfortable"
       type="button"
       aria-label="Create dashboard"
+          title="Create dashboard"
       class="min-h-9 min-w-9 px-2 py-1 font-mono text-base leading-none text-[var(--foundation-muted)] transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+      @click="emit('create')"
     >
       +
     </button>

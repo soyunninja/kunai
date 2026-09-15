@@ -86,10 +86,12 @@ describe('Phase 0003 dashboard shell Home RED contract', () => {
     wrapper.unmount()
   })
 
-  it('keeps account, logout, settings entry, dashboard management, and existing appearance control available without exposing raw protected data', async () => {
+  it('keeps account, logout, settings entry, and dashboard management available while appearance is contained in Settings', async () => {
     const { wrapper } = await mountHome()
-    const appearance = wrapper.get<HTMLSelectElement>('#appearance')
 
+    expect(wrapper.find('#appearance').exists()).toBe(false)
+    await wrapper.get('[data-testid="settings-entry"]').trigger('click')
+    const appearance = wrapper.get<HTMLSelectElement>('#appearance')
     await appearance.setValue('light')
     await nextTick()
 

@@ -104,7 +104,7 @@ afterEach(() => {
 })
 
 describe('Phase 0003 Dashboard Shell SSR/UI RED contract', () => {
-  it('renders a protected dashboard shell for a completed user with product identity, dashboard header, tabs, account actions, theme control, and an empty active dashboard placeholder', async () => {
+  it('renders a protected dashboard shell for a completed user with product identity, dashboard header, tabs, and account actions', async () => {
     const { wrapper } = await mountDashboardRoute()
 
     expect(wrapper.get('main').attributes('aria-label')).toBe('Dashboard shell')
@@ -118,8 +118,35 @@ describe('Phase 0003 Dashboard Shell SSR/UI RED contract', () => {
     expect(wrapper.get('[data-testid="settings-entry"]').text()).toMatch(/settings/i)
     expect(wrapper.get('[data-testid="user-identity"]').text()).toContain('Ada Lovelace')
     expect(wrapper.get('[data-testid="logout"]').text()).toMatch(/log out/i)
-    expect(wrapper.get<HTMLSelectElement>('#appearance').exists()).toBe(true)
+    expect(wrapper.find('#appearance').exists()).toBe(false)
     expect(wrapper.get('[data-testid="active-dashboard-empty-state"]').text()).toMatch(/work/i)
+
+    wrapper.unmount()
+  })
+
+  it('opens an accessible settings dialog with only the appearance options and reuses the active theme mode', async () => {
+    const { wrapper } = await mountDashboardRoute()
+
+    await wrapper.get('[data-testid="settings-entry"]').trigger('click')
+
+    const dialog = wrapper.get('[role="dialog"][aria-labelledby="settings-heading"]')
+    const selector = wrapper.get<HTMLSelectElement>('[data-testid="appearance-select"]')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(wrapper.get('#settings-heading').text()).toBe('Settings')
+    expect(wrapper.get('#appearance-heading').text()).toBe('Appearance')
+    expect(selector.findAll('option').map((option) => option.text())).toEqual(['Dark', 'Light', 'System'])
+
+    await selector.setValue('light')
+    await nextTick()
+    expect(document.documentElement.dataset.theme).toBe('light')
+
+    await selector.setValue('system')
+    await nextTick()
+    expect(document.documentElement.dataset.theme).toBe('system')
+
+    await wrapper.get('[data-testid="settings-close"]').trigger('click')
+    expect(wrapper.find('[role="dialog"][aria-labelledby="settings-heading"]').exists()).toBe(false)
+    expect(wrapper.find('#appearance').exists()).toBe(false)
 
     wrapper.unmount()
   })

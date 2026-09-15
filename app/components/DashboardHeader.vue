@@ -14,6 +14,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  createDashboard: []
+  openSettings: []
+  manageDashboards: []
   selectDashboard: [dashboardId: string]
   logout: []
 }>()
@@ -36,18 +39,22 @@ const avatar = computed(() => (
           <button
             data-testid="settings-entry"
             type="button"
-            class="px-2 py-1 transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            class="min-h-10 px-3 !text-2xl leading-none cursor-pointer transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             aria-label="Open settings"
+            title="Open settings"
+            @click="emit('openSettings')"
           >
-            Settings
+            <span aria-hidden="true">::</span><span class="sr-only">Settings</span>
           </button>
           <button
             data-testid="manage-dashboards"
             type="button"
-            class="px-2 py-1 transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            class="min-h-10 px-3 !text-2xl leading-none cursor-pointer transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             aria-label="Manage dashboards"
+              title="Manage dashboards"
+            @click="emit('manageDashboards')"
           >
-            Manage
+            <span aria-hidden="true">≡</span><span class="sr-only">Manage dashboards</span>
           </button>
           <div data-testid="user-identity" class="flex items-center gap-1.5 px-1.5 py-1 text-current">
             <img
@@ -62,12 +69,15 @@ const avatar = computed(() => (
           </div>
           <button
             data-testid="logout"
+              :aria-label="logoutPending ? 'Logging out' : 'Log out'"
+              :title="logoutPending ? 'Logging out' : 'Log out'"
+              :aria-busy="logoutPending"
             type="button"
-            class="px-2 py-1 transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:pointer-events-none disabled:opacity-60"
+            class="min-h-10 px-3 !text-2xl leading-none cursor-pointer transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:pointer-events-none disabled:opacity-60"
             :disabled="logoutPending"
             @click="emit('logout')"
           >
-            {{ logoutPending ? 'Logging out…' : 'Log out' }}
+            <span aria-hidden="true">{{ logoutPending ? '…' : '↪' }}</span><span class="sr-only">{{ logoutPending ? 'Logging out' : 'Log out' }}</span>
           </button>
         </div>
       </div>
@@ -76,6 +86,7 @@ const avatar = computed(() => (
         class="min-w-0"
         :dashboards="dashboards"
         :active-dashboard-id="activeDashboardId"
+        @create="emit('createDashboard')"
         @select="emit('selectDashboard', $event)"
       />
     </div>
