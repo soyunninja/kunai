@@ -73,7 +73,6 @@ export const mapDashboardRecord = (record: unknown): DashboardState => {
     sortOrder: requiredFiniteNumber(record, 'sortOrder'),
     seedKey: nullableString(record.seedKey),
     archivedAt: nullableString(record.archivedAt),
-    createdAt: requiredString(record, 'created'),
   }
 }
 

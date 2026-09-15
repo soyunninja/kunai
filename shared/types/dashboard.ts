@@ -22,7 +22,6 @@ export interface DashboardState {
   readonly sortOrder: number
   readonly seedKey: string | null
   readonly archivedAt: string | null
-  readonly createdAt: string
 }
 
 export interface DashboardCreateInput {

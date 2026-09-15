@@ -31,7 +31,6 @@ const dashboard = (
   sortOrder: 0,
   seedKey: null,
   archivedAt: null,
-  createdAt: `2026-09-15T00:00:0${id.length}Z`,
   ...overrides,
 })
 
